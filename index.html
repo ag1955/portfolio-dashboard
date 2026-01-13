@@ -4,26 +4,147 @@
 <meta charset="UTF-8">
 <title>AG Group | Portfolio Command Center</title>
 
+<!-- Libraries -->
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-body{margin:0;font-family:Inter,system-ui;background:#f0f2f5}
-header{background:#1a365d;color:#fff;padding:20px;display:flex;justify-content:space-between}
-.container{max-width:1600px;margin:auto;padding:25px}
-.card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,.05);margin-bottom:20px}
-.filters{display:flex;gap:20px;flex-wrap:wrap}
-.filter-group select{width:200px;height:120px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-#top5{display:grid;grid-template-columns:repeat(5,1fr);gap:15px}
-.top-card{background:#fffaf0;border-top:4px solid #d69e2e;padding:12px;border-radius:8px;text-align:center}
-.table-wrap{max-height:600px;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{position:sticky;top:0;background:#f7fafc;padding:8px}
-td{padding:8px;border-bottom:1px solid #edf2f7}
+:root{
+  --bg:#f0f2f5;
+  --card:#ffffff;
+  --primary:#1a365d;
+  --accent:#d69e2e;
+  --muted:#718096;
+}
+body{
+  margin:0;
+  font-family:Inter,system-ui,sans-serif;
+  background:var(--bg);
+  color:#2d3748;
+}
+header{
+  background:var(--primary);
+  color:#fff;
+  padding:20px 30px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+header h1{margin:0;font-size:22px}
+header small{color:#cbd5e0;font-size:13px}
+
+.container{
+  max-width:1600px;
+  margin:auto;
+  padding:25px;
+}
+
+button{
+  padding:6px 12px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:12px;
+}
+
+/* FILTER BAR */
+.filters{
+  background:var(--card);
+  padding:20px;
+  border-radius:12px;
+  display:flex;
+  gap:20px;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  box-shadow:0 4px 6px rgba(0,0,0,.05);
+  margin-bottom:20px;
+}
+.filter-group label{
+  font-size:11px;
+  font-weight:700;
+  color:var(--muted);
+}
+.filter-group select{
+  width:200px;
+  height:120px;
+}
+
+/* TABS */
+.tabs{
+  margin-bottom:20px;
+}
+.tabs button{margin-right:10px}
 .tab{display:none}
 .tab.active{display:block}
+
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+
+/* CARDS */
+.card{
+  background:var(--card);
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 4px 6px rgba(0,0,0,.05);
+  margin-bottom:20px;
+}
+
+/* TOP 5 */
+#top5{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:15px;
+}
+.top-card{
+  background:#fffaf0;
+  border-top:4px solid var(--accent);
+  padding:12px;
+  border-radius:8px;
+  text-align:center;
+  font-size:13px;
+}
+
+/* TABLE */
+.table-wrap{
+  max-height:600px;
+  overflow:auto;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+th{
+  position:sticky;
+  top:0;
+  background:#f7fafc;
+  padding:10px;
+}
+td{
+  padding:10px;
+  border-bottom:1px solid #edf2f7;
+}
+
+/* DRILL */
+#drillInfo{
+  display:none;
+  background:#fffaf0;
+  border:1px solid #feebc8;
+  padding:10px;
+  border-radius:8px;
+  margin-bottom:10px;
+}
+
+.footer{
+  text-align:right;
+  font-size:12px;
+  color:var(--muted);
+}
 </style>
 </head>
 
@@ -31,12 +152,12 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
 
 <header>
   <div>
-    <h2>AG Group – Investment Portfolio</h2>
-    Period: <b id="periodText">--</b>
+    <h1>AG Group – Investment Portfolio</h1>
+    <small>Period: <b id="periodText">--</b></small>
   </div>
   <div>
-    <button onclick="exportPDF()">PDF</button>
-    <button onclick="exportExcel()">Excel</button><br>
+    <button onclick="exportPDF()">📄 PDF</button>
+    <button onclick="exportExcel()">📊 Excel</button><br>
     <small id="lastUpdated">--</small>
   </div>
 </header>
@@ -44,98 +165,151 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
 <div class="container">
 
 <!-- FILTERS -->
-<div class="card filters">
+<div class="filters">
   <div class="filter-group">
-    Investor<br><select id="invF" multiple></select>
+    <label>Investor</label><br>
+    <select id="invF" multiple></select><br>
+    <button onclick="clearFilter('invF')">Clear</button>
   </div>
   <div class="filter-group">
-    Company<br><select id="comF" multiple></select>
+    <label>Company</label><br>
+    <select id="comF" multiple></select><br>
+    <button onclick="clearFilter('comF')">Clear</button>
   </div>
   <div class="filter-group">
-    Type<br><select id="typF" multiple></select>
+    <label>Type</label><br>
+    <select id="typF" multiple></select><br>
+    <button onclick="clearFilter('typF')">Clear</button>
   </div>
-  <button onclick="resetAll()">Reset</button>
+  <div>
+    <button onclick="resetAll()">Reset All</button>
+  </div>
 </div>
 
 <!-- TABS -->
-<button onclick="showTab('insights')">Insights</button>
-<button onclick="showTab('repo')">Repository</button>
+<div class="tabs">
+  <button onclick="showTab('insights')">Portfolio Insights</button>
+  <button onclick="showTab('repo')">Detailed Investment Repository</button>
+</div>
 
-<!-- INSIGHTS -->
+<!-- INSIGHTS TAB -->
 <div id="insights" class="tab active">
+
   <div class="grid">
-    <div class="card"><div id="companyPie"></div></div>
-    <div class="card"><div id="typeDonut"></div></div>
+    <div class="card">
+      <h3 id="companyPieTitle">Company Concentration</h3>
+      <div id="companyPie"></div>
+    </div>
+    <div class="card">
+      <h3>Asset Mix</h3>
+      <div id="typeDonut" style="height:420px"></div>
+    </div>
   </div>
+
   <h3>Top 5 Summary</h3>
   <div id="top5"></div>
+
 </div>
 
-<!-- REPOSITORY -->
+<!-- REPOSITORY TAB -->
 <div id="repo" class="tab">
-  <input id="searchBox" placeholder="Search..." onkeyup="applySearch()">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Investor</th><th>Company</th><th>Type</th>
-          <th>Qty</th><th>Value (₹ L)</th><th>Date</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
+
+  <div id="drillInfo">
+    <span id="drillText"></span>
+    <button onclick="clearDrill()">Clear Drill</button>
   </div>
+
+  <input id="searchBox" placeholder="Search within results..."
+    style="width:300px;padding:6px;margin-bottom:10px"
+    onkeyup="applySearch()">
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Investor</th>
+            <th>Company</th>
+            <th>Type</th>
+            <th>Qty</th>
+            <th>Value (₹ L)</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
+<div class="footer">Confidential – For Client Use Only</div>
 </div>
 
 <script>
+/* ================= CONFIG ================= */
 const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLhf6NIZ6o8k4JVQQt3XVFwAgb-5h0UL-saIgjtF4PJTzhY5bVQPBHDnwrw1XVYL4OtzfKFMV2GiVVMMocZHY-JSorOpIKofX6dT1b2m1mjGXaKZzVgCVPLzB4SSYM7oH2wmz5Zfwbd_D5rD4k27gqgIiYmvSE3hqenxPFkYukj3qg2uvnI1bf5_Vf1z7m0AEyRpb3ZX7eSdUxsRezbB8WlJc5GtpNsiZobew_SI2z_6XNxJ9QhL-agOK91Zd-0XbWLVftPiZCbnOXXUq-IbF3jQFET18Q&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
 
-let rawData=[], filteredData=[], drillData=[];
+/* ================= STATE ================= */
+let rawData = [];
+let filteredData = [];
+let drillData = [];
 let companyMode = "COMPANY";
 
-fetch(DATA_URL).then(r=>r.json()).then(j=>{
-  rawData=j.data;
-  document.getElementById("periodText").innerText=j.period;
-  document.getElementById("lastUpdated").innerText=j.lastUpdated;
-  initFilters();
-  applyFilters();
-});
+/* ================= LOAD ================= */
+fetch(DATA_URL)
+  .then(r=>r.json())
+  .then(json=>{
+    rawData = json.data || [];
+    filteredData = rawData;
 
-/* ---------- FILTERS (TRUE CASCADING) ---------- */
-function initFilters(){
-  ['invF','comF','typF'].forEach(id=>{
-    document.getElementById(id).onchange = applyFilters;
+    document.getElementById("periodText").innerText = json.period || "--";
+    document.getElementById("lastUpdated").innerText = json.lastUpdated || "--";
+
+    initFilters();
+    applyFilters();
   });
-  rebuildAllFilters(rawData);
+
+/* ================= TABS ================= */
+function showTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
 }
 
+/* ================= FILTERS ================= */
 function selected(id){
   return [...document.getElementById(id).selectedOptions].map(o=>o.value);
 }
 
-function rebuildAllFilters(base){
-  rebuildFilter('invF','Investor',base);
-  rebuildFilter('comF','Name of the Company',base);
-  rebuildFilter('typF','Type',base);
+function initFilters(){
+  fillFilter('invF','Investor',rawData);
+  fillFilter('comF','Name of the Company',rawData);
+  fillFilter('typF','Type',rawData);
+
+  ['invF','comF','typF'].forEach(id=>{
+    document.getElementById(id).onchange = applyFilters;
+  });
 }
 
-function rebuildFilter(id,key,data){
+function fillFilter(id,key,data){
   const sel=document.getElementById(id);
   const prev=selected(id);
   const vals=[...new Set(data.map(d=>d[key]))].sort();
+
   sel.innerHTML='<option value="All">All</option>'+
-    vals.map(v=>`<option>${v}</option>`).join('');
+    vals.map(v=>`<option value="${v}">${v}</option>`).join('');
+
   [...sel.options].forEach(o=>{
-    if(prev.includes(o.value) || prev.length===0 && o.value==='All'){
+    if(prev.includes(o.value) || (prev.length===0 && o.value==='All')){
       o.selected=true;
     }
   });
 }
 
 function applyFilters(){
-  const iv=selected('invF'), co=selected('comF'), ty=selected('typF');
+  const iv=selected('invF');
+  const co=selected('comF');
+  const ty=selected('typF');
 
   filteredData = rawData.filter(d =>
     (iv.includes('All')||iv.includes(d.Investor)) &&
@@ -143,20 +317,19 @@ function applyFilters(){
     (ty.includes('All')||ty.includes(d.Type))
   );
 
-  // CASCADE LOGIC
-  rebuildFilter('invF','Investor',
+  fillFilter('invF','Investor',
     rawData.filter(d =>
       (co.includes('All')||co.includes(d['Name of the Company'])) &&
       (ty.includes('All')||ty.includes(d.Type))
     )
   );
-  rebuildFilter('comF','Name of the Company',
+  fillFilter('comF','Name of the Company',
     rawData.filter(d =>
       (iv.includes('All')||iv.includes(d.Investor)) &&
       (ty.includes('All')||ty.includes(d.Type))
     )
   );
-  rebuildFilter('typF','Type',
+  fillFilter('typF','Type',
     rawData.filter(d =>
       (iv.includes('All')||iv.includes(d.Investor)) &&
       (co.includes('All')||co.includes(d['Name of the Company']))
@@ -165,10 +338,11 @@ function applyFilters(){
 
   companyMode = (co.length===1 && !co.includes('All')) ? "INVESTOR" : "COMPANY";
 
+  drillData = [];
   renderAll(filteredData);
 }
 
-/* ---------- RENDER ---------- */
+/* ================= RENDER ================= */
 function renderAll(data){
   renderTable(data);
   renderCompanyPie(data);
@@ -176,18 +350,39 @@ function renderAll(data){
   renderTop5(data);
 }
 
-/* ---------- PIE (COMPANY → INVESTOR MODE) ---------- */
+/* ================= TABLE ================= */
+function renderTable(data){
+  document.getElementById("tableBody").innerHTML =
+    data.map(d=>`
+      <tr>
+        <td>${d.Investor}</td>
+        <td>${d['Name of the Company']}</td>
+        <td>${d.Type}</td>
+        <td>${d.Qty}</td>
+        <td>${((+d.Value||0)/100000).toFixed(2)}</td>
+        <td>${d.DOA}</td>
+      </tr>`).join('');
+}
+
+/* ================= SEARCH ================= */
+function applySearch(){
+  const q=document.getElementById("searchBox").value.toLowerCase();
+  const base=drillData.length?drillData:filteredData;
+  renderTable(base.filter(d=>JSON.stringify(d).toLowerCase().includes(q)));
+}
+
+/* ================= CHARTS ================= */
 function renderCompanyPie(data){
-  let map={}, title="";
   const total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
+  let map={};
 
   if(companyMode==="INVESTOR"){
-    title="Investor-wise Holding";
+    document.getElementById("companyPieTitle").innerText="Investor-wise Holding";
     data.forEach(d=>{
       map[d.Investor]=(map[d.Investor]||0)+(+d.Value||0)/100000;
     });
   }else{
-    title="Company Concentration";
+    document.getElementById("companyPieTitle").innerText="Company Concentration";
     data.forEach(d=>{
       map[d['Name of the Company']] =
         (map[d['Name of the Company']]||0)+(+d.Value||0)/100000;
@@ -198,73 +393,90 @@ function renderCompanyPie(data){
     labels:Object.keys(map),
     values:Object.values(map),
     type:'pie',
-    hole:.35
+    hole:0.35
   }],{
-    title,
-    annotations:[{text:'₹ '+total.toFixed(2)+' L',showarrow:false}]
+    annotations:[{
+      text:'₹ '+total.toFixed(2)+' L',
+      showarrow:false
+    }]
   });
 }
 
-/* ---------- DONUT ---------- */
 function renderTypeDonut(data){
-  const map={}, total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
-  data.forEach(d=>map[d.Type]=(map[d.Type]||0)+(+d.Value||0)/100000);
+  const total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
+  const map={};
+
+  data.forEach(d=>{
+    map[d.Type]=(map[d.Type]||0)+(+d.Value||0)/100000;
+  });
 
   Plotly.newPlot('typeDonut',[{
     labels:Object.keys(map),
     values:Object.values(map),
     type:'pie',
-    hole:.6
+    hole:0.6
   }],{
-    annotations:[{text:'₹ '+total.toFixed(2)+' L',showarrow:false}]
+    annotations:[{
+      text:'₹ '+total.toFixed(2)+' L',
+      showarrow:false,
+      font:{size:18}
+    }]
   });
 }
 
-/* ---------- TABLE ---------- */
-function renderTable(d){
-  document.getElementById("tableBody").innerHTML=d.map(r=>`
-    <tr>
-      <td>${r.Investor}</td>
-      <td>${r['Name of the Company']}</td>
-      <td>${r.Type}</td>
-      <td>${r.Qty}</td>
-      <td>${(+r.Value/100000).toFixed(2)}</td>
-      <td>${r.DOA}</td>
-    </tr>`).join('');
-}
+/* ================= TOP 5 ================= */
+function renderTop5(data){
+  let map={};
 
-function applySearch(){
-  const q=document.getElementById("searchBox").value.toLowerCase();
-  renderTable(filteredData.filter(d=>JSON.stringify(d).toLowerCase().includes(q)));
-}
+  const iv=selected('invF');
+  const co=selected('comF');
 
-/* ---------- TOP 5 ---------- */
-function renderTop5(d){
-  const map={};
-  d.forEach(x=>map[x['Name of the Company']] =
-    (map[x['Name of the Company']]||0)+(+x.Value||0)/100000);
-  document.getElementById("top5").innerHTML=
+  if(co.length===1 && !co.includes('All')){
+    data.forEach(d=>{
+      map[d.Investor]=(map[d.Investor]||0)+(+d.Value||0)/100000;
+    });
+  }else if(iv.length===1 && !iv.includes('All')){
+    data.forEach(d=>{
+      map[d['Name of the Company']] =
+        (map[d['Name of the Company']]||0)+(+d.Value||0)/100000;
+    });
+  }else{
+    data.forEach(d=>{
+      map[d['Name of the Company']] =
+        (map[d['Name of the Company']]||0)+(+d.Value||0)/100000;
+    });
+  }
+
+  document.getElementById("top5").innerHTML =
     Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5)
-      .map(([k,v])=>`<div class="top-card">${k}<br>₹ ${v.toFixed(2)} L</div>`).join('');
+      .map(([k,v])=>`
+        <div class="top-card">
+          <b>${k}</b><br>₹ ${v.toFixed(2)} L
+        </div>`).join('');
 }
 
-/* ---------- UTILS ---------- */
-function showTab(t){
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  document.getElementById(t).classList.add('active');
-}
-function resetAll(){
-  ['invF','comF','typF'].forEach(id=>document.getElementById(id).selectedIndex=0);
-  applyFilters();
-}
+/* ================= EXPORT ================= */
 function exportExcel(){
-  const ws=XLSX.utils.json_to_sheet(filteredData);
+  const ws=XLSX.utils.json_to_sheet(drillData.length?drillData:filteredData);
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,"Data");
-  XLSX.writeFile(wb,"Investments.xlsx");
+  XLSX.utils.book_append_sheet(wb,ws,"Investments");
+  XLSX.writeFile(wb,"Investment_Data.xlsx");
 }
 function exportPDF(){
-  html2pdf().from(document.body).save("Report.pdf");
+  html2pdf().from(document.body).save("Investment_Report.pdf");
+}
+function clearDrill(){
+  drillData=[];
+  showTab('insights');
+  applyFilters();
+}
+function clearFilter(id){
+  [...document.getElementById(id).options]
+    .forEach(o=>o.selected=o.value==='All');
+  applyFilters();
+}
+function resetAll(){
+  ['invF','comF','typF'].forEach(clearFilter);
 }
 </script>
 
