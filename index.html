@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AG Group | Portfolio Dashboard</title>
+<title>AG Group | Investment Dashboard</title>
 
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -14,7 +14,7 @@ header{background:#1a365d;color:#fff;padding:20px;display:flex;justify-content:s
 .container{max-width:1600px;margin:auto;padding:25px}
 .card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,.05);margin-bottom:20px}
 .filters{display:flex;gap:20px;flex-wrap:wrap}
-.filters select{width:200px;height:120px}
+.filter-group select{width:200px;height:120px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .tab{display:none}
 .tab.active{display:block}
@@ -24,6 +24,8 @@ header{background:#1a365d;color:#fff;padding:20px;display:flex;justify-content:s
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{position:sticky;top:0;background:#f7fafc;padding:8px}
 td{padding:8px;border-bottom:1px solid #edf2f7}
+button{margin-top:5px}
+#drillBanner{background:#fffaf0;border:1px solid #feebc8;padding:10px;border-radius:8px;margin-bottom:10px}
 </style>
 </head>
 
@@ -45,10 +47,25 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
 
 <!-- FILTERS -->
 <div class="card filters">
-  <div>Investor<br><select id="invF" multiple></select></div>
-  <div>Company<br><select id="comF" multiple></select></div>
-  <div>Type<br><select id="typF" multiple></select></div>
-  <div><br><button onclick="resetAll()">Reset</button></div>
+  <div class="filter-group">
+    Investor<br>
+    <select id="invF" multiple></select><br>
+    <button onclick="clearFilter('invF')">Clear</button>
+  </div>
+  <div class="filter-group">
+    Company<br>
+    <select id="comF" multiple></select><br>
+    <button onclick="clearFilter('comF')">Clear</button>
+  </div>
+  <div class="filter-group">
+    Type<br>
+    <select id="typF" multiple></select><br>
+    <button onclick="clearFilter('typF')">Clear</button>
+  </div>
+  <div>
+    <br>
+    <button onclick="resetAll()">Reset All</button>
+  </div>
 </div>
 
 <!-- TABS -->
@@ -73,6 +90,10 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
 
 <!-- REPOSITORY -->
 <div id="repo" class="tab">
+  <div id="drillBanner" style="display:none">
+    <span id="drillText"></span>
+    <button onclick="clearDrill()">Clear Drill</button>
+  </div>
   <input placeholder="Search..." onkeyup="searchTable(this.value)">
   <div class="table-wrap">
     <table>
@@ -94,13 +115,11 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
 </div>
 
 <script>
-/* ================= CONFIG ================= */
 const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLhf6NIZ6o8k4JVQQt3XVFwAgb-5h0UL-saIgjtF4PJTzhY5bVQPBHDnwrw1XVYL4OtzfKFMV2GiVVMMocZHY-JSorOpIKofX6dT1b2m1mjGXaKZzVgCVPLzB4SSYM7oH2wmz5Zfwbd_D5rD4k27gqgIiYmvSE3hqenxPFkYukj3qg2uvnI1bf5_Vf1z7m0AEyRpb3ZX7eSdUxsRezbB8WlJc5GtpNsiZobew_SI2z_6XNxJ9QhL-agOK91Zd-0XbWLVftPiZCbnOXXUq-IbF3jQFET18Q&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
 
-/* ================= STATE ================= */
 let rawData=[], filteredData=[], drillData=[];
 
-/* ================= LOAD ================= */
+/* LOAD */
 fetch(DATA_URL).then(r=>r.json()).then(j=>{
   rawData=j.data||[];
   document.getElementById("periodText").innerText=j.period||"--";
@@ -109,18 +128,29 @@ fetch(DATA_URL).then(r=>r.json()).then(j=>{
   applyFilters();
 });
 
-/* ================= TABS ================= */
+/* STATE HELPERS */
+function effectiveData(){ return drillData.length ? drillData : filteredData; }
+function selected(id){ return [...document.getElementById(id).selectedOptions].map(o=>o.value); }
+
+/* TABS */
 function showTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(tab).classList.add('active');
 }
 
-/* ================= FILTERS ================= */
-function selected(id){
-  return [...document.getElementById(id).selectedOptions].map(o=>o.value);
+/* FILTERS */
+function initFilters(){
+  ['invF','comF','typF'].forEach(id=>document.getElementById(id).onchange=applyFilters);
+  rebuildAll(rawData);
 }
 
-function rebuildFilter(id,key,data){
+function rebuildAll(base){
+  rebuild('invF','Investor',base);
+  rebuild('comF','Name of the Company',base);
+  rebuild('typF','Type',base);
+}
+
+function rebuild(id,key,data){
   const sel=document.getElementById(id);
   const prev=selected(id);
   const vals=[...new Set(data.map(d=>d[key]))].sort();
@@ -130,51 +160,53 @@ function rebuildFilter(id,key,data){
   });
 }
 
-function initFilters(){
-  ['invF','comF','typF'].forEach(id=>document.getElementById(id).onchange=applyFilters);
-  rebuildFilter('invF','Investor',rawData);
-  rebuildFilter('comF','Name of the Company',rawData);
-  rebuildFilter('typF','Type',rawData);
-}
-
 function applyFilters(){
   const iv=selected('invF'), co=selected('comF'), ty=selected('typF');
 
-  filteredData=rawData.filter(d=>
+  filteredData = rawData.filter(d =>
     (iv.includes("All")||iv.includes(d.Investor)) &&
     (co.includes("All")||co.includes(d["Name of the Company"])) &&
     (ty.includes("All")||ty.includes(d.Type))
   );
 
-  rebuildFilter('invF','Investor',rawData.filter(d=>
+  rebuild('invF','Investor', rawData.filter(d=>
     (co.includes("All")||co.includes(d["Name of the Company"])) &&
     (ty.includes("All")||ty.includes(d.Type))
   ));
-  rebuildFilter('comF','Name of the Company',rawData.filter(d=>
+  rebuild('comF','Name of the Company', rawData.filter(d=>
     (iv.includes("All")||iv.includes(d.Investor)) &&
     (ty.includes("All")||ty.includes(d.Type))
   ));
-  rebuildFilter('typF','Type',rawData.filter(d=>
+  rebuild('typF','Type', rawData.filter(d=>
     (iv.includes("All")||iv.includes(d.Investor)) &&
     (co.includes("All")||co.includes(d["Name of the Company"]))
   ));
 
   drillData=[];
+  document.getElementById("drillBanner").style.display="none";
   renderAll();
 }
 
-/* ================= RENDER ================= */
-function effective(){ return drillData.length?drillData:filteredData; }
+function clearFilter(id){
+  [...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
+  applyFilters();
+}
 
+function resetAll(){
+  ['invF','comF','typF'].forEach(id=>document.getElementById(id).selectedIndex=0);
+  applyFilters();
+}
+
+/* RENDER */
 function renderAll(){
   renderCharts();
   renderTop5();
-  renderTable(effective());
+  renderTable(effectiveData());
 }
 
-/* ================= CHARTS ================= */
+/* CHARTS */
 function renderCharts(){
-  const data=effective();
+  const data=effectiveData();
   const iv=selected('invF'), co=selected('comF');
   const total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
 
@@ -191,7 +223,7 @@ function renderCharts(){
     data.forEach(d=>m[d["Name of the Company"]]=(m[d["Name of the Company"]]||0)+(+d.Value||0)/100000);
     Object.entries(m).forEach(([k,v])=>{
       if(total>0 && v/total<0.02) others+=v;
-      else{ labels.push(k); values.push(v); }
+      else { labels.push(k); values.push(v); }
     });
     if(others>0){ labels.push("Others (<2%)"); values.push(others); }
   }
@@ -203,14 +235,18 @@ function renderCharts(){
   });
 
   document.getElementById("companyPie").on("plotly_click",e=>{
-    const l=e.points[0].label;
-    if(l==="Others (<2%)"){
+    const label=e.points[0].label;
+    if(label==="Others (<2%)"){
       drillData=data.filter(d=>(+d.Value||0)/100000/total<0.02);
+      document.getElementById("drillText").innerText="Drill: Small Holdings (<2%)";
     } else if(document.getElementById("pieTitle").innerText.includes("Investor")){
-      drillData=data.filter(d=>d.Investor===l);
+      drillData=data.filter(d=>d.Investor===label);
+      document.getElementById("drillText").innerText="Drill: Investor "+label;
     } else {
-      drillData=data.filter(d=>d["Name of the Company"]===l);
+      drillData=data.filter(d=>d["Name of the Company"]===label);
+      document.getElementById("drillText").innerText="Drill: Company "+label;
     }
+    document.getElementById("drillBanner").style.display="block";
     showTab("repo");
     renderTable(drillData);
   });
@@ -231,23 +267,27 @@ function renderCharts(){
 
   document.getElementById("typeDonut").on("plotly_click",e=>{
     drillData=data.filter(d=>d.Type===e.points[0].label);
+    document.getElementById("drillText").innerText="Drill: Type "+e.points[0].label;
+    document.getElementById("drillBanner").style.display="block";
     showTab("repo");
     renderTable(drillData);
   });
 }
 
-/* ================= TOP 5 ================= */
+/* TOP 5 */
 function renderTop5(){
-  const data=effective();
+  const data=effectiveData();
   let m={};
   const iv=selected('invF'), co=selected('comF');
 
   if(co.length===1 && !co.includes("All")){
     data.forEach(d=>m[d.Investor]=(m[d.Investor]||0)+(+d.Value||0)/100000);
   } else if(iv.length===1 && !iv.includes("All")){
-    data.forEach(d=>m[d["Name of the Company"]]=(m[d["Name of the Company"]]||0)+(+d.Value||0)/100000);
+    data.forEach(d=>m[d["Name of the Company"]] =
+      (m[d["Name of the Company"]]||0)+(+d.Value||0)/100000);
   } else {
-    data.forEach(d=>m[d["Name of the Company"]]=(m[d["Name of the Company"]]||0)+(+d.Value||0)/100000);
+    data.forEach(d=>m[d["Name of the Company"]] =
+      (m[d["Name of the Company"]]||0)+(+d.Value||0)/100000);
   }
 
   document.getElementById("top5").innerHTML=
@@ -255,7 +295,7 @@ function renderTop5(){
     .map(([k,v])=>`<div class="top">${k}<br>₹ ${v.toFixed(2)} L</div>`).join('');
 }
 
-/* ================= TABLE ================= */
+/* TABLE */
 function renderTable(data){
   document.getElementById("tableBody").innerHTML=data.map(d=>`
     <tr>
@@ -270,22 +310,24 @@ function renderTable(data){
 
 function searchTable(q){
   q=q.toLowerCase();
-  renderTable(effective().filter(d=>JSON.stringify(d).toLowerCase().includes(q)));
+  renderTable(effectiveData().filter(d=>JSON.stringify(d).toLowerCase().includes(q)));
 }
 
-/* ================= UTILS ================= */
-function resetAll(){
-  ['invF','comF','typF'].forEach(id=>document.getElementById(id).selectedIndex=0);
-  applyFilters();
-}
+/* EXPORT */
 function exportExcel(){
-  const ws=XLSX.utils.json_to_sheet(effective());
+  const ws=XLSX.utils.json_to_sheet(effectiveData());
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,"Data");
   XLSX.writeFile(wb,"Investments.xlsx");
 }
 function exportPDF(){
   html2pdf().from(document.body).save("Investment_Report.pdf");
+}
+function clearDrill(){
+  drillData=[];
+  document.getElementById("drillBanner").style.display="none";
+  showTab("insights");
+  renderAll();
 }
 </script>
 
