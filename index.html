@@ -20,9 +20,14 @@ button{cursor:pointer}
 .tab{display:none}
 .tab.active{display:block}
 .table-wrap{max-height:600px;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{background:#f7fafc;padding:8px;border-bottom:1px solid #e2e8f0}
-td{padding:8px;border-bottom:1px solid #edf2f7}
+
+/* TABLE (SCREEN + PDF SAFE) */
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{display:table-header-group}
+tr{page-break-inside:avoid}
+th{background:#f7fafc;padding:6px;border:1px solid #e2e8f0}
+td{padding:6px;border:1px solid #edf2f7}
+
 #repoTotals{background:#edf2f7;padding:10px;border-radius:8px;margin-bottom:10px}
 .page-break{page-break-before:always}
 </style>
@@ -37,7 +42,8 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
   </div>
   <div>
     <button onclick="exportPDF()">Export PDF</button>
-    <button onclick="exportExcel()">Export Excel</button><br>
+    <button onclick="exportExcel()">Export Excel</button>
+    <button onclick="resetAll()">Reset All</button><br>
     <small id="lastUpdated">--</small>
   </div>
 </header>
@@ -88,6 +94,7 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
     Total Value: <b id="totalValue">₹ 0.00 L</b>
     <span id="drillNote" style="margin-left:10px;color:#744210"></span>
   </div>
+
   <div class="table-wrap">
     <table id="repoTable">
       <thead>
@@ -96,7 +103,7 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
           <th>Company</th>
           <th>Type</th>
           <th>Qty</th>
-          <th>Rate</th>
+          <th>Rate per Share</th>
           <th>Value (₹ L)</th>
           <th>Date</th>
         </tr>
@@ -110,32 +117,24 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
 
 <script>
 /* ================= CONFIG ================= */
-const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiuBF8qGiXLco-bq_QTS-C6ixwdJreZE5grEdR_Zz_B27butjuX1JKRbZAECXshOCgXuO4iuievHn6b7bNc3nt6xqI1TAKXOZkjLyy8yhe4MKKvhmKB7FllPtopmMBENt11nCExifDallRow8xQB63oTw-3CnB-xUtkJuP6dfnRlemz8NFEdNhDwu0SSHtDgZQCn38FTzzQAHN4pQzgLlLeAH3WHNb6IO_lymOJLT_2fNKqzfSILNJTN4Tptt4iWFgQ8ogNFDqQuY2mXDYZj7VwASG17A&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
+const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiRnkJsxdwpys3O7Ls9ss9ZdK_xxzmJKtpGCzR4gTmgLSAPoGv5JkKJ9T81cjqGevK9sDIw9czAosNudJX-3k7ZEgFkooEFhMj4BxNYea5GyBubIn0VREBn47u8jtDc74MP8hShjvPI7gl83U4e5Xy3lAvi-QJmQ9aN4zwOsWEOn5ELXQ8Jl-rUJlKRZYon4EMUaKyIs53OGCiizRr-0bqtUs7sFzh9PonVLee9JhdpqG0y_f5t_GuHte-KZfDnvNAF_4KY3O-3RZLR2UatsLNlps4EAw&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
 
 /* ================= STATE ================= */
-let rawData = [];
-let filteredData = [];
-let drillData = null;
+let rawData=[], filteredData=[], drillData=null;
 
 /* ================= LOAD ================= */
 fetch(DATA_URL).then(r=>r.json()).then(j=>{
-  rawData = j.data || [];
-  periodText.innerText = j.period || "--";
-  lastUpdated.innerText = j.lastUpdated || "--";
+  rawData=j.data||[];
+  periodText.innerText=j.period||"--";
+  lastUpdated.innerText=j.lastUpdated||"--";
   initFilters();
   applyFilters();
 });
 
 /* ================= HELPERS ================= */
-const s = v => String(v ?? "");
-const selected = id => [...document.getElementById(id).selectedOptions].map(o=>o.value);
-const viewData = () => drillData ?? filteredData;
-
-/* ================= TABS ================= */
-function showTab(t){
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  document.getElementById(t).classList.add('active');
-}
+const s=v=>String(v??"");
+const selected=id=>[...document.getElementById(id).selectedOptions].map(o=>o.value);
+const viewData=()=>drillData??filteredData;
 
 /* ================= FILTERS ================= */
 function rebuild(id,key,data){
@@ -156,36 +155,32 @@ function initFilters(){
   rebuild('typF','Type',rawData);
 }
 
-function applyFilters(){
-  drillData = null;
-  drillNote.innerText = "";
-  const iv=selected('invF'), co=selected('comF'), ty=selected('typF');
+function clearFilter(id){
+  [...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
+  applyFilters();
+}
 
-  filteredData = rawData.filter(d =>
+function resetAll(){
+  drillData=null;
+  drillNote.innerText="";
+  ['invF','comF','typF'].forEach(id=>{
+    [...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
+  });
+  applyFilters();
+}
+
+function applyFilters(){
+  drillData=null;
+  drillNote.innerText="";
+  const iv=selected('invF'),co=selected('comF'),ty=selected('typF');
+
+  filteredData=rawData.filter(d=>
     (iv.includes("All")||iv.includes(s(d.Investor))) &&
     (co.includes("All")||co.includes(s(d["Name of the Company"]))) &&
     (ty.includes("All")||ty.includes(s(d.Type)))
   );
 
-  rebuild('invF','Investor', rawData.filter(d =>
-    (co.includes("All")||co.includes(s(d["Name of the Company"]))) &&
-    (ty.includes("All")||ty.includes(s(d.Type)))
-  ));
-  rebuild('comF','Name of the Company', rawData.filter(d =>
-    (iv.includes("All")||iv.includes(s(d.Investor))) &&
-    (ty.includes("All")||ty.includes(s(d.Type)))
-  ));
-  rebuild('typF','Type', rawData.filter(d =>
-    (iv.includes("All")||iv.includes(s(d.Investor))) &&
-    (co.includes("All")||co.includes(s(d["Name of the Company"])))
-  ));
-
   renderAll();
-}
-
-function clearFilter(id){
-  [...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
-  applyFilters();
 }
 
 /* ================= RENDER ================= */
@@ -196,22 +191,22 @@ function renderAll(){
 
 /* ================= CHARTS ================= */
 function renderCharts(){
-  const data = filteredData;
-  const companies = selected('comF');
-  const total = data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
+  const data=filteredData;
+  const companies=selected('comF');
+  const total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
 
-  let labels=[], values=[], others=0;
-  if(companies.length===1 && !companies.includes("All")){
-    pieTitle.innerText = "Investor-wise Holding";
+  let labels=[],values=[],others=0;
+  if(companies.length===1&&!companies.includes("All")){
+    pieTitle.innerText="Investor-wise Holding";
     const m={};
     data.forEach(d=>m[s(d.Investor)]=(m[s(d.Investor)]||0)+(+d.Value||0)/100000);
-    labels=Object.keys(m); values=Object.values(m);
-  } else {
-    pieTitle.innerText = "Company Concentration";
+    labels=Object.keys(m);values=Object.values(m);
+  }else{
+    pieTitle.innerText="Company Concentration";
     const m={};
     data.forEach(d=>m[s(d["Name of the Company"])]=(m[s(d["Name of the Company"])]||0)+(+d.Value||0)/100000);
     Object.entries(m).forEach(([k,v])=>{
-      if(total>0 && v/total<0.02) others+=v;
+      if(total>0&&v/total<0.02)others+=v;
       else{labels.push(k);values.push(v);}
     });
     if(others>0){labels.push("Others (<2%)");values.push(others);}
@@ -223,12 +218,9 @@ function renderCharts(){
   companyPie.on("plotly_click",e=>{
     const l=e.points[0].label;
     drillNote.innerText="(Drill: "+l+")";
-    if(pieTitle.innerText.includes("Investor"))
-      drillData = filteredData.filter(d=>s(d.Investor)===l);
-    else if(l==="Others (<2%)")
-      drillData = filteredData.filter(d=>(+d.Value||0)/100000/total<0.02);
-    else
-      drillData = filteredData.filter(d=>s(d["Name of the Company"])===l);
+    drillData=l==="Others (<2%)"
+      ? filteredData.filter(d=>(+d.Value||0)/100000/total<0.02)
+      : filteredData.filter(d=>s(d["Name of the Company"])===l);
     showTab('repo');
     renderTable(viewData());
   });
@@ -241,7 +233,7 @@ function renderCharts(){
   typeDonut.on("plotly_click",e=>{
     const l=e.points[0].label;
     drillNote.innerText="(Drill: Type "+l+")";
-    drillData = filteredData.filter(d=>s(d.Type)===l);
+    drillData=filteredData.filter(d=>s(d.Type)===l);
     showTab('repo');
     renderTable(viewData());
   });
@@ -255,7 +247,7 @@ function renderTable(data){
       <td>${s(d["Name of the Company"])}</td>
       <td>${s(d.Type)}</td>
       <td>${d.Qty}</td>
-      <td>${d.Rate ?? ""}</td>
+      <td>${d["Rate per share"] ?? ""}</td>
       <td>${(+d.Value/100000).toFixed(2)}</td>
       <td>${d.DOA}</td>
     </tr>`).join('');
@@ -268,8 +260,8 @@ function renderTable(data){
 
 /* ================= EXPORT ================= */
 async function exportPDF(){
-  const pieImg = await Plotly.toImage(companyPie,{format:"png",width:700,height:500});
-  const donutImg = await Plotly.toImage(typeDonut,{format:"png",width:700,height:500});
+  const pieImg=await Plotly.toImage(companyPie,{format:"png",width:700,height:500});
+  const donutImg=await Plotly.toImage(typeDonut,{format:"png",width:700,height:500});
 
   const box=document.createElement("div");
   box.innerHTML=`
@@ -303,17 +295,11 @@ function exportExcel(){
     Company:d["Name of the Company"],
     Type:d.Type,
     Qty:d.Qty,
-    Rate:d.Rate,
+    "Rate per Share": d["Rate per share"],
     "Value (₹ L)": (+d.Value/100000).toFixed(2),
     Date:d.DOA
   }));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Repository");
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([
-    {Metric:"Period",Value:periodText.innerText},
-    {Metric:"Total Qty",Value:totalQty.innerText},
-    {Metric:"Total Value",Value:totalValue.innerText},
-    {Metric:"Generated",Value:new Date().toLocaleString()}
-  ]),"Summary");
   XLSX.writeFile(wb,"AG_Investment_Results.xlsx");
 }
 </script>
