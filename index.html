@@ -203,15 +203,27 @@ let activeData = [];
 fetch(DATA_URL)
   .then(r => r.json())
   .then(json => {
-    fullData = json.data || [];
-    activeData = fullData;
 
-    document.getElementById("lastUpdated").innerText =
-      "Last updated: " + (json.lastUpdated || "—");
+    // Handle both API formats safely
+    if (Array.isArray(json)) {
+      fullData = json;
+      document.getElementById("lastUpdated").innerText =
+        "Last updated: " + new Date().toLocaleString();
+    } else {
+      fullData = json.data || [];
+      document.getElementById("lastUpdated").innerText =
+        "Last updated: " + (json.lastUpdated || "—");
+    }
+
+    activeData = fullData;
 
     renderTable(fullData);
     renderCompanyPie(fullData);
     renderTypeDonut(fullData);
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Failed to load data");
   });
 
 /* TABLE */
@@ -315,4 +327,5 @@ function clearDrill(){
 
 </body>
 </html>
+
 
