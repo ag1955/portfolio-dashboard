@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AG Group | Portfolio Command Center</title>
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+:root {
+  --bg:#f0f2f5; --card:#ffffff; --primary:#1a365d; --accent:#2f855a;
+  --danger:#c53030; --blue:#2b6cb0; --gold:#d69e2e;
+}
+body { font-family:'Inter',sans-serif; background:var(--bg); margin:0; padding:20px; color:#2d3748; }
+header { display:flex; justify-content:space-between; align-items:center; background:var(--primary);
+  color:white; padding:15px 30px; border-radius:12px; margin-bottom:20px; }
+#controls { background:var(--card); padding:20px; border-radius:12px;
+  display:flex; flex-wrap:wrap; gap:15px; justify-content:center;
+  box-shadow:0 4px 6px rgba(0,0,0,0.05); margin-bottom:20px; }
+.filter-group { display:flex; flex-direction:column; gap:5px; }
+label { font-size:11px; font-weight:700; color:#718096; text-transform:uppercase; }
+select[multiple] { height:100px; min-width:150px; border-radius:6px; border:1px solid #cbd5e0; }
+.btn { padding:8px 16px; border-radius:6px; border:none; cursor:pointer;
+  font-weight:600; font-size:12px; }
+.btn-pdf { background:#2d3748; color:white; }
+.btn-excel { background:#2f855a; color:white; }
+#top5Row { display:grid; grid-template-columns:repeat(5,1fr); gap:15px; margin-bottom:20px; }
+.sum-card { background:white; padding:15px; border-radius:10px;
+  border-top:4px solid var(--gold); text-align:center;
+  box-shadow:0 2px 4px rgba(0,0,0,0.05); }
+#dashGrid { display:grid; grid-template-columns:1.5fr 1fr; gap:20px; }
+.chart-box { background:white; padding:15px; border-radius:12px;
+  min-height:400px; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
+.table-container { background:white; border-radius:12px; overflow:hidden;
+  box-shadow:0 4px 6px rgba(0,0,0,0.05); max-height:400px; overflow:auto; margin-bottom:20px;}
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { background:#f7fafc; padding:12px; text-align:left; color:#4a5568;
+  border-bottom:2px solid #edf2f7; position:sticky; top:0; }
+td { padding:12px; border-bottom:1px solid #edf2f7; }
+tr:hover { background:#f1f5f9; }
+#drillSection { margin-top:25px; padding:20px; background:#fffaf0;
+  border:1px solid #feebc8; border-radius:12px; display:none; }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2 style="margin:0">AG Group Portfolio</h2>
+  <div style="display:flex; gap:10px">
+    <button class="btn btn-pdf" onclick="exportPDF()">📄 Export PDF</button>
+    <button class="btn btn-excel" onclick="exportExcel()">📊 Export Excel</button>
+  </div>
+</header>
+
+<div id="controls">
+  <div class="filter-group"><label>Investor</label><select id="invF" multiple></select><button class="btn" onclick="clearFilter('invF')">Clear</button></div>
+  <div class="filter-group"><label>Company</label><select id="comF" multiple></select><button class="btn" onclick="clearFilter('comF')">Clear</button></div>
+  <div class="filter-group"><label>Type</label><select id="typF" multiple></select><button class="btn" onclick="clearFilter('typF')">Clear</button></div>
+  <button class="btn" style="background:#e2e8f0; align-self:flex-end" onclick="resetAll()">Reset All</button>
+</div>
+
+<div id="top5Row"></div>
+
+<div id="dashGrid">
+  <div id="pieBox" class="chart-box"></div>
+  <div style="display:flex; flex-direction:column; gap:20px">
+    <div id="donutBox" class="chart-box"></div>
+    <div class="table-container" id="repoSection">
+      <table>
+        <thead><tr><th>Investor</th><th>Company</th><th>Type</th><th>Qty</th><th>Value (L)</th><th>Date</th></tr></thead>
+        <tbody id="repoBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="drillSection">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+    <h3 id="drillTitle" style="margin:0; color:#744210"></h3>
+    <button class="btn" onclick="closeDrill()">Clear Drill</button>
+  </div>
+  <div class="table-container">
+    <table>
+      <thead><tr><th>Investor</th><th>Company</th><th>Qty</th><th>Value (L)</th></tr></thead>
+      <tbody id="drillBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let rawData=[], currentSet=[], lastDrillData=[];
+
+const DATA_URL = "https://script.google.com/macros/s/AKfycbyPI1jWB00niKk4WiXO1wahFWx4FV89u7gB8-Du1C13ir7YAPBolHwAA7InLIVf9bLU/exec";
+
+function loadFromGoogleSheet(){
+  fetch(DATA_URL)
+    .then(res => res.json())
+    .then(data => {
+      rawData = data.map(d => ({
+        ...d,
+        _vL:(parseFloat(String(d.Value).replace(/,/g,''))||0)/100000,
+        _y:d.DOA ? d.DOA.split('-').pop() : 'N/A'
+      }));
+      initFilters();
+      applyFilters();
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Failed to load live data");
+    });
+}
+
+// FILTERS
+function fill(selId,key,data){
+  const sel=document.getElementById(selId);
+  const vals=[...new Set(data.map(d=>d[key]))].filter(v=>v!=null && v!=='').sort();
+  sel.innerHTML='<option value="All" selected>All</option>'+vals.map(v=>`<option value="${v}">${v}</option>`).join('');
+}
+function initFilters(){
+  fill('invF','Investor',rawData);
+  fill('comF','Name of the Company',rawData);
+  fill('typF','Type',rawData);
+}
+function getSelected(id){ return Array.from(document.getElementById(id).selectedOptions).map(o=>o.value);}
+function applyFilters(){
+  const iv=getSelected('invF'), co=getSelected('comF'), ty=getSelected('typF');
+  currentSet=rawData.filter(d=>
+    (iv.includes('All')||iv.includes(d.Investor)) &&
+    (co.includes('All')||co.includes(d['Name of the Company'])) &&
+    (ty.includes('All')||ty.includes(d.Type))
+  );
+  updateVisuals();
+  renderTable('repoBody',currentSet);
+  updateTop5Investors();
+}
+function clearFilter(id){ Array.from(document.getElementById(id).options).forEach(o=>o.selected=(o.value==='All')); applyFilters(); }
+function resetAll(){ ['invF','comF','typF'].forEach(clearFilter); closeDrill(); }
+
+// TABLE
+function renderTable(id,data){
+  document.getElementById(id).innerHTML=data.map(d=>`<tr>
+    <td>${d.Investor}</td>
+    <td>${d['Name of the Company']}</td>
+    <td>${d.Type}</td>
+    <td>${d.Qty}</td>
+    <td>${d._vL.toFixed(2)}</td>
+    <td>${d.DOA}</td>
+  </tr>`).join('');
+}
+
+// VISUALS
+function updateVisuals(){
+  const total=currentSet.reduce((a,b)=>a+b._vL,0);
+  const groups={};
+  currentSet.forEach(d=>groups[d['Name of the Company']] = (groups[d['Name of the Company']]||0)+d._vL);
+  Plotly.newPlot('pieBox',[{labels:Object.keys(groups), values:Object.values(groups), type:'pie'}],
+    {title:'Company Concentration'});
+  const tyMap={};
+  currentSet.forEach(d=>tyMap[d.Type]=(tyMap[d.Type]||0)+d._vL);
+  Plotly.newPlot('donutBox',[{labels:Object.keys(tyMap), values:Object.values(tyMap), type:'pie', hole:0.6}],
+    {title:'Asset Mix'});
+}
+
+// TOP 5
+function updateTop5Investors(){
+  document.getElementById('top5Row').innerHTML='';
+}
+
+// EXPORTS
+function exportExcel(){
+  const ws=XLSX.utils.json_to_sheet(currentSet);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Portfolio");
+  XLSX.writeFile(wb,"AG_Portfolio.xlsx");
+}
+function exportPDF(){
+  html2pdf().from(document.body).save("AG_Group_Report.pdf");
+}
+
+// INIT
+loadFromGoogleSheet();
+['invF','comF','typF'].forEach(id=>document.getElementById(id).onchange=applyFilters);
+</script>
+
+</body>
+</html>
