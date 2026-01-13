@@ -22,10 +22,11 @@ header{background:#1a365d;color:#fff;padding:20px;display:flex;justify-content:s
 .top{background:#fffaf0;border-top:4px solid #d69e2e;padding:10px;border-radius:8px;text-align:center}
 .table-wrap{max-height:600px;overflow:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{position:sticky;top:0;background:#f7fafc;padding:8px}
+th{background:#f7fafc;padding:8px;border-bottom:1px solid #e2e8f0}
 td{padding:8px;border-bottom:1px solid #edf2f7}
 #drillBanner{background:#fffaf0;border:1px solid #feebc8;padding:10px;border-radius:8px;margin-bottom:10px}
 button{cursor:pointer}
+.page-break{page-break-before:always}
 </style>
 </head>
 
@@ -62,17 +63,13 @@ button{cursor:pointer}
     <select id="typF" multiple></select><br>
     <button onclick="clearFilter('typF')">Clear</button>
   </div>
-  <div>
-    <br>
-    <button onclick="resetAll()">Reset All</button>
-  </div>
 </div>
 
 <!-- TABS -->
 <button onclick="showTab('insights')">Insights</button>
 <button onclick="showTab('repo')">Repository</button>
 
-<!-- INSIGHTS -->
+<!-- INSIGHTS TAB -->
 <div id="insights" class="tab active">
   <div class="grid">
     <div class="card">
@@ -88,7 +85,7 @@ button{cursor:pointer}
   <div id="top5"></div>
 </div>
 
-<!-- REPOSITORY -->
+<!-- REPOSITORY TAB -->
 <div id="repo" class="tab">
   <div id="drillBanner" style="display:none">
     <span id="drillText"></span>
@@ -113,18 +110,19 @@ button{cursor:pointer}
 
 </div>
 
-<!-- HIDDEN EXPORT CONTAINER -->
-<div id="reportContainer" style="display:none"></div>
+<!-- EXPORT-ONLY CONTAINER -->
+<div id="exportArea" style="display:none"></div>
 
 <script>
+/* ================= CONFIG ================= */
 const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiuBF8qGiXLco-bq_QTS-C6ixwdJreZE5grEdR_Zz_B27butjuX1JKRbZAECXshOCgXuO4iuievHn6b7bNc3nt6xqI1TAKXOZkjLyy8yhe4MKKvhmKB7FllPtopmMBENt11nCExifDallRow8xQB63oTw-3CnB-xUtkJuP6dfnRlemz8NFEdNhDwu0SSHtDgZQCn38FTzzQAHN4pQzgLlLeAH3WHNb6IO_lymOJLT_2fNKqzfSILNJTN4Tptt4iWFgQ8ogNFDqQuY2mXDYZj7VwASG17A&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
 
-/* ---------- STATE ---------- */
+/* ================= STATE ================= */
 let rawData=[], filteredData=[], drillData=[];
 const s=v=>String(v??"");
 const effective=()=>drillData.length?drillData:filteredData;
 
-/* ---------- LOAD ---------- */
+/* ================= LOAD ================= */
 fetch(DATA_URL).then(r=>r.json()).then(j=>{
   rawData=j.data||[];
   periodText.innerText=j.period||"--";
@@ -133,13 +131,13 @@ fetch(DATA_URL).then(r=>r.json()).then(j=>{
   applyFilters();
 });
 
-/* ---------- TABS ---------- */
+/* ================= TABS ================= */
 function showTab(t){
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.getElementById(t).classList.add('active');
 }
 
-/* ---------- FILTERS ---------- */
+/* ================= FILTERS ================= */
 const selected=id=>[...document.getElementById(id).selectedOptions].map(o=>o.value);
 
 function rebuild(id,key,data){
@@ -190,19 +188,15 @@ function clearFilter(id){
   [...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
   applyFilters();
 }
-function resetAll(){
-  ['invF','comF','typF'].forEach(id=>document.getElementById(id).selectedIndex=0);
-  applyFilters();
-}
 
-/* ---------- RENDER ---------- */
+/* ================= RENDER ================= */
 function renderAll(){
   renderCharts();
   renderTop5();
   renderTable(effective());
 }
 
-/* ---------- CHARTS ---------- */
+/* ================= CHARTS ================= */
 function renderCharts(){
   const data=effective();
   const co=selected('comF');
@@ -228,24 +222,13 @@ function renderCharts(){
   Plotly.newPlot(companyPie,[{labels,values,type:"pie",hole:0.35}],
     {annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]});
 
-  companyPie.on("plotly_click",e=>{
-    const l=e.points[0].label;
-    if(l==="Others (<2%)") drillData=data.filter(d=>(+d.Value||0)/100000/total<0.02);
-    else if(pieTitle.innerText.includes("Investor")) drillData=data.filter(d=>s(d.Investor)===l);
-    else drillData=data.filter(d=>s(d["Name of the Company"])===l);
-    drillText.innerText="Drill: "+l;
-    drillBanner.style.display="block";
-    showTab("repo");
-    renderTable(drillData);
-  });
-
   const t={};
   data.forEach(d=>t[s(d.Type)]=(t[s(d.Type)]||0)+(+d.Value||0)/100000);
   Plotly.newPlot(typeDonut,[{labels:Object.keys(t),values:Object.values(t),type:"pie",hole:0.6}],
     {annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]});
 }
 
-/* ---------- TOP 5 ---------- */
+/* ================= TOP 5 ================= */
 function renderTop5(){
   const m={};
   effective().forEach(d=>m[s(d["Name of the Company"])]=(m[s(d["Name of the Company"])]||0)+(+d.Value||0)/100000);
@@ -253,7 +236,7 @@ function renderTop5(){
     .map(([k,v])=>`<div class="top">${k}<br>₹ ${v.toFixed(2)} L</div>`).join('');
 }
 
-/* ---------- TABLE ---------- */
+/* ================= TABLE ================= */
 function renderTable(data){
   tableBody.innerHTML=data.map(d=>`
     <tr>
@@ -266,29 +249,37 @@ function renderTable(data){
     </tr>`).join('');
 }
 
-/* ---------- DRILL ---------- */
+/* ================= DRILL ================= */
 function clearDrill(r=true){
   drillData=[];
   drillBanner.style.display="none";
   if(r) renderAll();
 }
 
-/* ---------- EXPORT ---------- */
+/* ================= EXPORT ================= */
 function exportPDF(){
-  const box=reportContainer;
+  const box=document.getElementById("exportArea");
   box.innerHTML="";
-  box.append(
-    document.createElement("h2").appendChild(document.createTextNode("AG Group – Investment Portfolio")).parentNode,
-    document.createElement("p").appendChild(document.createTextNode(
-      "Period: "+periodText.innerText+" | Generated: "+new Date().toLocaleString()
-    )).parentNode,
-    companyPie.cloneNode(true),
-    typeDonut.cloneNode(true),
-    top5.cloneNode(true),
-    repoTable.cloneNode(true)
-  );
-  html2pdf().set({margin:12,filename:"AG_Investment_Report.pdf",jsPDF:{format:"a3"}})
-    .from(box).save();
+
+  box.innerHTML+=`<h2>AG Group – Investment Portfolio</h2>
+    <p><b>Period:</b> ${periodText.innerText}<br>
+    <b>Generated:</b> ${new Date().toLocaleString()}</p>`;
+
+  box.appendChild(companyPie.cloneNode(true));
+  box.appendChild(typeDonut.cloneNode(true));
+  box.appendChild(top5.cloneNode(true));
+
+  box.innerHTML+=`<div class="page-break"></div>
+    <h3>Detailed Investment Repository</h3>`;
+
+  box.appendChild(repoTable.cloneNode(true));
+
+  html2pdf().set({
+    margin:12,
+    filename:"AG_Investment_Report.pdf",
+    jsPDF:{format:"a3"},
+    pagebreak:{mode:["css"]}
+  }).from(box).save();
 }
 
 function exportExcel(){
