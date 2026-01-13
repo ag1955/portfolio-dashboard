@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <title>AG Group | Investment Dashboard</title>
+
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
 :root {
@@ -20,7 +23,6 @@ body {
   color:#2d3748;
 }
 
-/* HEADER */
 header {
   background:var(--primary);
   color:white;
@@ -30,43 +32,29 @@ header {
   align-items:center;
 }
 
-header h1 {
-  margin:0;
-  font-size:22px;
-}
+header h1 { margin:0; font-size:22px; }
+header small { color:#cbd5e0; font-size:13px; }
 
-header small {
-  color:#cbd5e0;
-  font-size:13px;
-}
-
-/* CONTAINER */
 .container {
   padding:25px;
   max-width:1500px;
   margin:auto;
 }
 
-/* SECTION */
-.section {
-  margin-bottom:30px;
-}
+.section { margin-bottom:30px; }
 
 .section-title {
   font-size:16px;
   font-weight:700;
-  color:#2d3748;
   margin-bottom:15px;
 }
 
-/* GRID */
 .grid {
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap:20px;
 }
 
-/* CARDS */
 .card {
   background:var(--card);
   border-radius:12px;
@@ -74,7 +62,11 @@ header small {
   box-shadow:0 4px 6px rgba(0,0,0,.05);
 }
 
-/* TABLE */
+select {
+  width:250px;
+  height:100px;
+}
+
 .table-wrap {
   max-height:650px;
   overflow:auto;
@@ -99,30 +91,25 @@ td {
   border-bottom:1px solid #edf2f7;
 }
 
-tr:hover {
-  background:#f1f5f9;
-}
+tr:hover { background:#f1f5f9; }
 
-/* DRILL INFO */
 #drillInfo {
-  margin-bottom:10px;
-  padding:10px 15px;
+  display:none;
   background:#fffaf0;
   border:1px solid #feebc8;
+  padding:10px 15px;
   border-radius:8px;
-  display:none;
-  font-size:13px;
+  margin-bottom:10px;
 }
 
-.clear-btn {
-  float:right;
-  background:#e53e3e;
-  color:white;
+button {
+  padding:6px 12px;
   border:none;
-  padding:5px 10px;
   border-radius:6px;
   cursor:pointer;
 }
+
+.clear-btn { background:#e53e3e; color:white; }
 
 .footer {
   margin-top:20px;
@@ -138,16 +125,24 @@ tr:hover {
 <header>
   <div>
     <h1>AG Group – Investment Portfolio</h1>
-    <small>Period: <b>April 2025</b></small>
+    <small>Period: <b id="periodText">--</b></small>
   </div>
   <div>
+    <button onclick="exportPDF()">📄 PDF</button>
+    <button onclick="exportExcel()">📊 Excel</button><br>
     <small id="lastUpdated">Last updated: --</small>
   </div>
 </header>
 
 <div class="container">
 
-  <!-- SECTION 1 -->
+  <!-- FILTER -->
+  <div class="card" style="margin-bottom:20px">
+    <b>Investor Filter</b><br>
+    <select id="investorFilter" multiple></select>
+  </div>
+
+  <!-- INSIGHTS -->
   <div class="section">
     <div class="section-title">Portfolio Insights</div>
     <div class="grid">
@@ -157,12 +152,12 @@ tr:hover {
       </div>
       <div class="card">
         <h3>Asset Mix</h3>
-        <div id="typeDonut" style="height:420px;"></div>
+        <div id="typeDonut" style="height:420px"></div>
       </div>
     </div>
   </div>
 
-  <!-- SECTION 2 -->
+  <!-- TABLE -->
   <div class="section">
     <div class="section-title">Investment Repository Details</div>
 
@@ -194,140 +189,118 @@ tr:hover {
 </div>
 
 <script>
-const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiFpng51MNw2Ci5QajK-UqiQqD0V3GzeoHMr_qgG519YSzudwpvVkoYiUZZJ2X0NJqpBZfb4sr1hgj86-v7gOyEwr5yPn4-GRdO7K40K2LqSCk477ExUZfARMOfS-T_L3nBkyNYQG8o8Pr6Zlt-zerQQyrvO9MTrjjpyc0-YKGTEHs7r_LAJuuTISL2jvwUQTWhfgJeffOxCVoMf0w43mU_hRdMFQCM6pgYI8bI_nc-f4-xfMJJFWb59aGWKouF3CXFvvNouzC8hGQdjz-Fdhfh-KPieg&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
+const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLhf6NIZ6o8k4JVQQt3XVFwAgb-5h0UL-saIgjtF4PJTzhY5bVQPBHDnwrw1XVYL4OtzfKFMV2GiVVMMocZHY-JSorOpIKofX6dT1b2m1mjGXaKZzVgCVPLzB4SSYM7oH2wmz5Zfwbd_D5rD4k27gqgIiYmvSE3hqenxPFkYukj3qg2uvnI1bf5_Vf1z7m0AEyRpb3ZX7eSdUxsRezbB8WlJc5GtpNsiZobew_SI2z_6XNxJ9QhL-agOK91Zd-0XbWLVftPiZCbnOXXUq-IbF3jQFET18Q&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
 
-let fullData = [];
-let activeData = [];
+let fullData = [], activeData = [];
 
-/* LOAD DATA */
 fetch(DATA_URL)
   .then(r => r.json())
   .then(json => {
-
-    // Handle both API formats safely
-    if (Array.isArray(json)) {
-      fullData = json;
-      document.getElementById("lastUpdated").innerText =
-        "Last updated: " + new Date().toLocaleString();
-    } else {
-      fullData = json.data || [];
-      document.getElementById("lastUpdated").innerText =
-        "Last updated: " + (json.lastUpdated || "—");
-    }
-
+    fullData = json.data || [];
     activeData = fullData;
 
-    renderTable(fullData);
-    renderCompanyPie(fullData);
-    renderTypeDonut(fullData);
-  })
-  .catch(err => {
-    console.error(err);
-    alert("Failed to load data");
+    document.getElementById("periodText").innerText = json.period || "--";
+    document.getElementById("lastUpdated").innerText =
+      "Last updated: " + (json.lastUpdated || new Date().toLocaleString());
+
+    populateInvestorFilter();
+    applyAll();
   });
 
-/* TABLE */
+function populateInvestorFilter(){
+  const sel = document.getElementById("investorFilter");
+  const investors = [...new Set(fullData.map(d=>d.Investor))].sort();
+  sel.innerHTML = `<option value="ALL" selected>All</option>` +
+    investors.map(i=>`<option>${i}</option>`).join("");
+  sel.onchange = applyAll;
+}
+
+function getFiltered(){
+  const sel = [...document.getElementById("investorFilter").selectedOptions].map(o=>o.value);
+  if (sel.includes("ALL")) return fullData;
+  return fullData.filter(d=>sel.includes(d.Investor));
+}
+
+function applyAll(){
+  activeData = getFiltered();
+  renderTable(activeData);
+  renderCompanyPie(activeData);
+  renderTypeDonut(activeData);
+}
+
 function renderTable(data){
   document.getElementById("tableBody").innerHTML = data.map(d=>`
     <tr>
-      <td>${d.Investor||""}</td>
-      <td>${d["Name of the Company"]||""}</td>
-      <td>${d.Type||""}</td>
-      <td>${d.Qty||""}</td>
+      <td>${d.Investor}</td>
+      <td>${d["Name of the Company"]}</td>
+      <td>${d.Type}</td>
+      <td>${d.Qty}</td>
       <td>${((+d.Value||0)/100000).toFixed(2)}</td>
-      <td>${d.DOA||""}</td>
-    </tr>
-  `).join("");
+      <td>${d.DOA}</td>
+    </tr>`).join("");
 }
 
-/* PIE DRILL */
 function renderCompanyPie(data){
   const map={}, small=[], total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
-
-  data.forEach(d=>{
-    map[d["Name of the Company"]] =
-      (map[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
-  });
+  data.forEach(d=>map[d["Name of the Company"]] = (map[d["Name of the Company"]]||0)+(+d.Value||0)/100000);
 
   const labels=[], values=[];
-  Object.entries(map).forEach(([k,v])=>{
-    if(v/total < 0.02) small.push(k);
-    else { labels.push(k); values.push(v); }
-  });
-
-  if(small.length){
-    labels.push("Others (<2%)");
-    values.push(small.reduce((a,c)=>a+map[c],0));
-  }
+  Object.entries(map).forEach(([k,v])=> v/total<0.02 ? small.push(k) : (labels.push(k),values.push(v)));
+  if(small.length){ labels.push("Others (<2%)"); values.push(small.reduce((a,c)=>a+map[c],0)); }
 
   Plotly.newPlot("companyPie",[{
     labels, values, type:"pie", hole:0.35
-  }],{
-    margin:{t:20},
-    annotations:[{
-      text:"₹ "+total.toFixed(2)+" L",
-      showarrow:false
-    }]
+  }]);
+
+  document.getElementById("companyPie").on("plotly_click",e=>{
+    const l=e.points[0].label;
+    activeData = l==="Others (<2%)"
+      ? fullData.filter(d=>small.includes(d["Name of the Company"]))
+      : fullData.filter(d=>d["Name of the Company"]===l);
+    showDrill("Company: "+l,activeData);
   });
-
-  document.getElementById("companyPie")
-    .on("plotly_click", e=>{
-      const label=e.points[0].label;
-      activeData = label==="Others (<2%)"
-        ? fullData.filter(d=>small.includes(d["Name of the Company"]))
-        : fullData.filter(d=>d["Name of the Company"]===label);
-
-      showDrill("Company: "+label, activeData);
-    });
 }
 
-/* DONUT DRILL */
 function renderTypeDonut(data){
-  const map={}, total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
-
-  data.forEach(d=>{
-    map[d.Type]=(map[d.Type]||0)+(+d.Value||0)/100000;
-  });
+  const map={};
+  data.forEach(d=>map[d.Type]=(map[d.Type]||0)+(+d.Value||0)/100000);
 
   Plotly.newPlot("typeDonut",[{
     labels:Object.keys(map),
     values:Object.values(map),
     type:"pie",
     hole:0.6
-  }],{
-    margin:{t:20},
-    annotations:[{
-      text:"₹ "+total.toFixed(2)+" L",
-      showarrow:false,
-      font:{size:18}
-    }]
-  });
+  }]);
 
-  document.getElementById("typeDonut")
-    .on("plotly_click", e=>{
-      const label=e.points[0].label;
-      activeData = fullData.filter(d=>d.Type===label);
-      showDrill("Asset Type: "+label, activeData);
-    });
+  document.getElementById("typeDonut").on("plotly_click",e=>{
+    const l=e.points[0].label;
+    activeData = fullData.filter(d=>d.Type===l);
+    showDrill("Asset Type: "+l,activeData);
+  });
 }
 
-/* DRILL UI */
-function showDrill(text,data){
-  document.getElementById("drillText").innerText=text;
+function showDrill(t,data){
+  document.getElementById("drillText").innerText=t;
   document.getElementById("drillInfo").style.display="block";
   renderTable(data);
 }
 
 function clearDrill(){
-  activeData = fullData;
   document.getElementById("drillInfo").style.display="none";
-  renderTable(fullData);
+  applyAll();
+}
+
+function exportExcel(){
+  const ws=XLSX.utils.json_to_sheet(activeData);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Investments");
+  XLSX.writeFile(wb,"Investment_Data.xlsx");
+}
+
+function exportPDF(){
+  html2pdf().from(document.body).save("Investment_Report.pdf");
 }
 </script>
 
 </body>
 </html>
-
-
-
-
