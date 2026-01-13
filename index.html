@@ -30,6 +30,8 @@ td{padding:6px;border:1px solid #edf2f7}
 
 #repoTotals{background:#edf2f7;padding:10px;border-radius:8px;margin-bottom:10px}
 .page-break{page-break-before:always}
+.top5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.top5 div{background:#fffaf0;border-top:4px solid #d69e2e;padding:10px;border-radius:8px;text-align:center}
 </style>
 </head>
 
@@ -75,6 +77,7 @@ td{padding:6px;border:1px solid #edf2f7}
 
 <!-- INSIGHTS -->
 <div id="insights" class="tab active">
+
   <div class="grid">
     <div class="card">
       <h3 id="pieTitle">Company Concentration</h3>
@@ -85,6 +88,12 @@ td{padding:6px;border:1px solid #edf2f7}
       <div id="typeDonut"></div>
     </div>
   </div>
+
+  <div class="card">
+    <h3 id="top5Title">Top 5 Companies (by Value)</h3>
+    <div id="top5Row" class="top5"></div>
+  </div>
+
 </div>
 
 <!-- REPOSITORY -->
@@ -136,6 +145,12 @@ const s=v=>String(v??"");
 const selected=id=>[...document.getElementById(id).selectedOptions].map(o=>o.value);
 const viewData=()=>drillData??filteredData;
 
+/* ================= TABS ================= */
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById(t).classList.add('active');
+}
+
 /* ================= FILTERS ================= */
 function rebuild(id,key,data){
   const sel=document.getElementById(id);
@@ -186,6 +201,7 @@ function applyFilters(){
 /* ================= RENDER ================= */
 function renderAll(){
   renderCharts();
+  renderTop5();
   renderTable(viewData());
 }
 
@@ -237,6 +253,34 @@ function renderCharts(){
     showTab('repo');
     renderTable(viewData());
   });
+}
+
+/* ================= TOP 5 ================= */
+function renderTop5(){
+  const data=drillData??filteredData;
+  let map={}, title="Top 5 Companies (by Value)";
+
+  if(drillData){
+    if(drillNote.innerText.includes("Type")){
+      title="Top 5 Companies in Selected Type";
+      data.forEach(d=>{
+        map[s(d["Name of the Company"])]=(map[s(d["Name of the Company"])]||0)+(+d.Value||0)/100000;
+      });
+    }else{
+      title="Top 5 Investors in Selected Company";
+      data.forEach(d=>{
+        map[s(d.Investor)]=(map[s(d.Investor)]||0)+(+d.Value||0)/100000;
+      });
+    }
+  }else{
+    data.forEach(d=>{
+      map[s(d["Name of the Company"])]=(map[s(d["Name of the Company"])]||0)+(+d.Value||0)/100000;
+    });
+  }
+
+  top5Title.innerText=title;
+  top5Row.innerHTML=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5)
+    .map(([k,v])=>`<div><b>${k}</b><br>₹ ${v.toFixed(2)} L</div>`).join('');
 }
 
 /* ================= TABLE & TOTALS ================= */
