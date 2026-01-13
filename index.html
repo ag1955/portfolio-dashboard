@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AG Group | Portfolio Command Center</title>
+<title>AG Group | Investment Dashboard</title>
 
 <!-- Libraries -->
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -10,141 +10,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-:root{
-  --bg:#f0f2f5;
-  --card:#ffffff;
-  --primary:#1a365d;
-  --accent:#d69e2e;
-  --muted:#718096;
-}
-body{
-  margin:0;
-  font-family:Inter,system-ui,sans-serif;
-  background:var(--bg);
-  color:#2d3748;
-}
-header{
-  background:var(--primary);
-  color:#fff;
-  padding:20px 30px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-header h1{margin:0;font-size:22px}
-header small{color:#cbd5e0;font-size:13px}
-
-.container{
-  max-width:1600px;
-  margin:auto;
-  padding:25px;
-}
-
-button{
-  padding:6px 12px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  font-size:12px;
-}
-
-/* FILTER BAR */
-.filters{
-  background:var(--card);
-  padding:20px;
-  border-radius:12px;
-  display:flex;
-  gap:20px;
-  flex-wrap:wrap;
-  align-items:flex-end;
-  box-shadow:0 4px 6px rgba(0,0,0,.05);
-  margin-bottom:20px;
-}
-.filter-group label{
-  font-size:11px;
-  font-weight:700;
-  color:var(--muted);
-}
-.filter-group select{
-  width:200px;
-  height:120px;
-}
-
-/* TABS */
-.tabs{
-  margin-bottom:20px;
-}
-.tabs button{margin-right:10px}
+body{margin:0;font-family:Inter,system-ui;background:#f0f2f5}
+header{background:#1a365d;color:#fff;padding:20px;display:flex;justify-content:space-between}
+.container{max-width:1600px;margin:auto;padding:25px}
+.card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,.05);margin-bottom:20px}
+.filters{display:flex;gap:20px;flex-wrap:wrap}
+.filters select{width:200px;height:120px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+#top5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.top{background:#fffaf0;border-top:4px solid #d69e2e;padding:10px;border-radius:8px;text-align:center}
 .tab{display:none}
 .tab.active{display:block}
-
-/* GRID */
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:20px;
-}
-
-/* CARDS */
-.card{
-  background:var(--card);
-  padding:20px;
-  border-radius:12px;
-  box-shadow:0 4px 6px rgba(0,0,0,.05);
-  margin-bottom:20px;
-}
-
-/* TOP 5 */
-#top5{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:15px;
-}
-.top-card{
-  background:#fffaf0;
-  border-top:4px solid var(--accent);
-  padding:12px;
-  border-radius:8px;
-  text-align:center;
-  font-size:13px;
-}
-
-/* TABLE */
-.table-wrap{
-  max-height:600px;
-  overflow:auto;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:13px;
-}
-th{
-  position:sticky;
-  top:0;
-  background:#f7fafc;
-  padding:10px;
-}
-td{
-  padding:10px;
-  border-bottom:1px solid #edf2f7;
-}
-
-/* DRILL */
-#drillInfo{
-  display:none;
-  background:#fffaf0;
-  border:1px solid #feebc8;
-  padding:10px;
-  border-radius:8px;
-  margin-bottom:10px;
-}
-
-.footer{
-  text-align:right;
-  font-size:12px;
-  color:var(--muted);
-}
+.table-wrap{max-height:600px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:#f7fafc;padding:8px}
+td{padding:8px;border-bottom:1px solid #edf2f7}
 </style>
 </head>
 
@@ -152,12 +32,12 @@ td{
 
 <header>
   <div>
-    <h1>AG Group – Investment Portfolio</h1>
-    <small>Period: <b id="periodText">--</b></small>
+    <h2>AG Group – Investment Portfolio</h2>
+    Period: <b id="periodText">--</b>
   </div>
   <div>
-    <button onclick="exportPDF()">📄 PDF</button>
-    <button onclick="exportExcel()">📊 Excel</button><br>
+    <button onclick="exportPDF()">PDF</button>
+    <button onclick="exportExcel()">Excel</button><br>
     <small id="lastUpdated">--</small>
   </div>
 </header>
@@ -165,44 +45,40 @@ td{
 <div class="container">
 
 <!-- FILTERS -->
-<div class="filters">
-  <div class="filter-group">
-    <label>Investor</label><br>
-    <select id="invF" multiple></select><br>
-    <button onclick="clearFilter('invF')">Clear</button>
-  </div>
-  <div class="filter-group">
-    <label>Company</label><br>
-    <select id="comF" multiple></select><br>
-    <button onclick="clearFilter('comF')">Clear</button>
-  </div>
-  <div class="filter-group">
-    <label>Type</label><br>
-    <select id="typF" multiple></select><br>
-    <button onclick="clearFilter('typF')">Clear</button>
+<div class="card filters">
+  <div>
+    Investor<br>
+    <select id="invF" multiple></select>
   </div>
   <div>
+    Company<br>
+    <select id="comF" multiple></select>
+  </div>
+  <div>
+    Type<br>
+    <select id="typF" multiple></select>
+  </div>
+  <div>
+    <br>
     <button onclick="resetAll()">Reset All</button>
   </div>
 </div>
 
 <!-- TABS -->
-<div class="tabs">
-  <button onclick="showTab('insights')">Portfolio Insights</button>
-  <button onclick="showTab('repo')">Detailed Investment Repository</button>
-</div>
+<button onclick="showTab('insights')">Insights</button>
+<button onclick="showTab('repo')">Repository</button>
 
-<!-- INSIGHTS TAB -->
+<!-- INSIGHTS -->
 <div id="insights" class="tab active">
 
   <div class="grid">
     <div class="card">
-      <h3 id="companyPieTitle">Company Concentration</h3>
+      <h3 id="pieTitle"></h3>
       <div id="companyPie"></div>
     </div>
     <div class="card">
-      <h3>Asset Mix</h3>
-      <div id="typeDonut" style="height:420px"></div>
+      <h3 id="donutTitle"></h3>
+      <div id="typeDonut"></div>
     </div>
   </div>
 
@@ -211,272 +87,238 @@ td{
 
 </div>
 
-<!-- REPOSITORY TAB -->
+<!-- REPOSITORY -->
 <div id="repo" class="tab">
-
-  <div id="drillInfo">
-    <span id="drillText"></span>
-    <button onclick="clearDrill()">Clear Drill</button>
+  <input placeholder="Search..." onkeyup="searchTable(this.value)">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Investor</th>
+          <th>Company</th>
+          <th>Type</th>
+          <th>Qty</th>
+          <th>Value (₹ L)</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
   </div>
-
-  <input id="searchBox" placeholder="Search within results..."
-    style="width:300px;padding:6px;margin-bottom:10px"
-    onkeyup="applySearch()">
-
-  <div class="card">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Investor</th>
-            <th>Company</th>
-            <th>Type</th>
-            <th>Qty</th>
-            <th>Value (₹ L)</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-  </div>
-
 </div>
 
-<div class="footer">Confidential – For Client Use Only</div>
 </div>
 
 <script>
-/* ================= CONFIG ================= */
-const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLhf6NIZ6o8k4JVQQt3XVFwAgb-5h0UL-saIgjtF4PJTzhY5bVQPBHDnwrw1XVYL4OtzfKFMV2GiVVMMocZHY-JSorOpIKofX6dT1b2m1mjGXaKZzVgCVPLzB4SSYM7oH2wmz5Zfwbd_D5rD4k27gqgIiYmvSE3hqenxPFkYukj3qg2uvnI1bf5_Vf1z7m0AEyRpb3ZX7eSdUxsRezbB8WlJc5GtpNsiZobew_SI2z_6XNxJ9QhL-agOK91Zd-0XbWLVftPiZCbnOXXUq-IbF3jQFET18Q&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
+const DATA_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
 
-/* ================= STATE ================= */
 let rawData = [];
 let filteredData = [];
-let drillData = [];
-let companyMode = "COMPANY";
 
-/* ================= LOAD ================= */
+/* ---------- LOAD ---------- */
 fetch(DATA_URL)
-  .then(r=>r.json())
-  .then(json=>{
+  .then(r => r.json())
+  .then(json => {
     rawData = json.data || [];
-    filteredData = rawData;
-
     document.getElementById("periodText").innerText = json.period || "--";
     document.getElementById("lastUpdated").innerText = json.lastUpdated || "--";
-
     initFilters();
     applyFilters();
   });
 
-/* ================= TABS ================= */
+/* ---------- TABS ---------- */
 function showTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(tab).classList.add('active');
 }
 
-/* ================= FILTERS ================= */
+/* ---------- FILTER HELPERS ---------- */
 function selected(id){
   return [...document.getElementById(id).selectedOptions].map(o=>o.value);
 }
 
-function initFilters(){
-  fillFilter('invF','Investor',rawData);
-  fillFilter('comF','Name of the Company',rawData);
-  fillFilter('typF','Type',rawData);
+function buildFilter(id, key, data){
+  const sel = document.getElementById(id);
+  const prev = selected(id);
+  const vals = [...new Set(data.map(d=>d[key]))].sort();
 
-  ['invF','comF','typF'].forEach(id=>{
-    document.getElementById(id).onchange = applyFilters;
-  });
-}
-
-function fillFilter(id,key,data){
-  const sel=document.getElementById(id);
-  const prev=selected(id);
-  const vals=[...new Set(data.map(d=>d[key]))].sort();
-
-  sel.innerHTML='<option value="All">All</option>'+
+  sel.innerHTML =
+    '<option value="All">All</option>' +
     vals.map(v=>`<option value="${v}">${v}</option>`).join('');
 
   [...sel.options].forEach(o=>{
-    if(prev.includes(o.value) || (prev.length===0 && o.value==='All')){
-      o.selected=true;
+    if(prev.includes(o.value) || (prev.length===0 && o.value==="All")){
+      o.selected = true;
     }
   });
 }
 
+/* ---------- FILTER INIT ---------- */
+function initFilters(){
+  ['invF','comF','typF'].forEach(id=>{
+    document.getElementById(id).onchange = applyFilters;
+  });
+  rebuildAllFilters(rawData);
+}
+
+function rebuildAllFilters(base){
+  buildFilter('invF','Investor',base);
+  buildFilter('comF','Name of the Company',base);
+  buildFilter('typF','Type',base);
+}
+
+/* ---------- APPLY FILTERS ---------- */
 function applyFilters(){
-  const iv=selected('invF');
-  const co=selected('comF');
-  const ty=selected('typF');
+  const iv = selected('invF');
+  const co = selected('comF');
+  const ty = selected('typF');
 
   filteredData = rawData.filter(d =>
-    (iv.includes('All')||iv.includes(d.Investor)) &&
-    (co.includes('All')||co.includes(d['Name of the Company'])) &&
-    (ty.includes('All')||ty.includes(d.Type))
+    (iv.includes("All") || iv.includes(d.Investor)) &&
+    (co.includes("All") || co.includes(d["Name of the Company"])) &&
+    (ty.includes("All") || ty.includes(d.Type))
   );
 
-  fillFilter('invF','Investor',
+  buildFilter('invF','Investor',
     rawData.filter(d =>
-      (co.includes('All')||co.includes(d['Name of the Company'])) &&
-      (ty.includes('All')||ty.includes(d.Type))
-    )
-  );
-  fillFilter('comF','Name of the Company',
-    rawData.filter(d =>
-      (iv.includes('All')||iv.includes(d.Investor)) &&
-      (ty.includes('All')||ty.includes(d.Type))
-    )
-  );
-  fillFilter('typF','Type',
-    rawData.filter(d =>
-      (iv.includes('All')||iv.includes(d.Investor)) &&
-      (co.includes('All')||co.includes(d['Name of the Company']))
+      (co.includes("All") || co.includes(d["Name of the Company"])) &&
+      (ty.includes("All") || ty.includes(d.Type))
     )
   );
 
-  companyMode = (co.length===1 && !co.includes('All')) ? "INVESTOR" : "COMPANY";
+  buildFilter('comF','Name of the Company',
+    rawData.filter(d =>
+      (iv.includes("All") || iv.includes(d.Investor)) &&
+      (ty.includes("All") || ty.includes(d.Type))
+    )
+  );
 
-  drillData = [];
-  renderAll(filteredData);
+  buildFilter('typF','Type',
+    rawData.filter(d =>
+      (iv.includes("All") || iv.includes(d.Investor)) &&
+      (co.includes("All") || co.includes(d["Name of the Company"]))
+    )
+  );
+
+  renderAll();
 }
 
-/* ================= RENDER ================= */
-function renderAll(data){
-  renderTable(data);
-  renderCompanyPie(data);
-  renderTypeDonut(data);
-  renderTop5(data);
+/* ---------- RENDER ---------- */
+function renderAll(){
+  renderCharts();
+  renderTop5();
+  renderTable(filteredData);
 }
 
-/* ================= TABLE ================= */
-function renderTable(data){
-  document.getElementById("tableBody").innerHTML =
-    data.map(d=>`
-      <tr>
-        <td>${d.Investor}</td>
-        <td>${d['Name of the Company']}</td>
-        <td>${d.Type}</td>
-        <td>${d.Qty}</td>
-        <td>${((+d.Value||0)/100000).toFixed(2)}</td>
-        <td>${d.DOA}</td>
-      </tr>`).join('');
-}
+/* ---------- CHARTS ---------- */
+function renderCharts(){
+  const iv = selected('invF');
+  const co = selected('comF');
+  const total = filteredData.reduce((a,b)=>a+(+b.Value||0),0)/100000;
 
-/* ================= SEARCH ================= */
-function applySearch(){
-  const q=document.getElementById("searchBox").value.toLowerCase();
-  const base=drillData.length?drillData:filteredData;
-  renderTable(base.filter(d=>JSON.stringify(d).toLowerCase().includes(q)));
-}
-
-/* ================= CHARTS ================= */
-function renderCompanyPie(data){
-  const total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
-  let map={};
-
-  if(companyMode==="INVESTOR"){
-    document.getElementById("companyPieTitle").innerText="Investor-wise Holding";
-    data.forEach(d=>{
-      map[d.Investor]=(map[d.Investor]||0)+(+d.Value||0)/100000;
+  /* PIE */
+  let pieMap = {};
+  if(co.length===1 && !co.includes("All")){
+    document.getElementById("pieTitle").innerText = "Investor-wise Holding";
+    filteredData.forEach(d=>{
+      pieMap[d.Investor]=(pieMap[d.Investor]||0)+(+d.Value||0)/100000;
     });
-  }else{
-    document.getElementById("companyPieTitle").innerText="Company Concentration";
-    data.forEach(d=>{
-      map[d['Name of the Company']] =
-        (map[d['Name of the Company']]||0)+(+d.Value||0)/100000;
+  } else {
+    document.getElementById("pieTitle").innerText = "Company Concentration";
+    filteredData.forEach(d=>{
+      pieMap[d["Name of the Company"]] =
+        (pieMap[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
     });
   }
 
-  Plotly.newPlot('companyPie',[{
-    labels:Object.keys(map),
-    values:Object.values(map),
-    type:'pie',
+  Plotly.newPlot("companyPie",[{
+    labels:Object.keys(pieMap),
+    values:Object.values(pieMap),
+    type:"pie",
     hole:0.35
   }],{
-    annotations:[{
-      text:'₹ '+total.toFixed(2)+' L',
-      showarrow:false
-    }]
-  });
-}
-
-function renderTypeDonut(data){
-  const total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
-  const map={};
-
-  data.forEach(d=>{
-    map[d.Type]=(map[d.Type]||0)+(+d.Value||0)/100000;
+    annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]
   });
 
-  Plotly.newPlot('typeDonut',[{
-    labels:Object.keys(map),
-    values:Object.values(map),
-    type:'pie',
+  /* DONUT */
+  document.getElementById("donutTitle").innerText = "Type Mix";
+  let donutMap = {};
+  filteredData.forEach(d=>{
+    donutMap[d.Type]=(donutMap[d.Type]||0)+(+d.Value||0)/100000;
+  });
+
+  Plotly.newPlot("typeDonut",[{
+    labels:Object.keys(donutMap),
+    values:Object.values(donutMap),
+    type:"pie",
     hole:0.6
   }],{
-    annotations:[{
-      text:'₹ '+total.toFixed(2)+' L',
-      showarrow:false,
-      font:{size:18}
-    }]
+    annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false,font:{size:18}}]
   });
 }
 
-/* ================= TOP 5 ================= */
-function renderTop5(data){
-  let map={};
+/* ---------- TOP 5 ---------- */
+function renderTop5(){
+  let map = {};
+  const iv = selected('invF');
+  const co = selected('comF');
 
-  const iv=selected('invF');
-  const co=selected('comF');
-
-  if(co.length===1 && !co.includes('All')){
-    data.forEach(d=>{
+  if(co.length===1 && !co.includes("All")){
+    filteredData.forEach(d=>{
       map[d.Investor]=(map[d.Investor]||0)+(+d.Value||0)/100000;
     });
-  }else if(iv.length===1 && !iv.includes('All')){
-    data.forEach(d=>{
-      map[d['Name of the Company']] =
-        (map[d['Name of the Company']]||0)+(+d.Value||0)/100000;
+  } else if(iv.length===1 && !iv.includes("All")){
+    filteredData.forEach(d=>{
+      map[d["Name of the Company"]] =
+        (map[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
     });
-  }else{
-    data.forEach(d=>{
-      map[d['Name of the Company']] =
-        (map[d['Name of the Company']]||0)+(+d.Value||0)/100000;
+  } else {
+    filteredData.forEach(d=>{
+      map[d["Name of the Company"]] =
+        (map[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
     });
   }
 
   document.getElementById("top5").innerHTML =
-    Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5)
-      .map(([k,v])=>`
-        <div class="top-card">
-          <b>${k}</b><br>₹ ${v.toFixed(2)} L
-        </div>`).join('');
+    Object.entries(map)
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0,5)
+      .map(([k,v])=>`<div class="top">${k}<br>₹ ${v.toFixed(2)} L</div>`)
+      .join('');
 }
 
-/* ================= EXPORT ================= */
+/* ---------- TABLE ---------- */
+function renderTable(data){
+  document.getElementById("tableBody").innerHTML =
+    data.map(r=>`
+      <tr>
+        <td>${r.Investor}</td>
+        <td>${r["Name of the Company"]}</td>
+        <td>${r.Type}</td>
+        <td>${r.Qty}</td>
+        <td>${(+r.Value/100000).toFixed(2)}</td>
+        <td>${r.DOA}</td>
+      </tr>`).join('');
+}
+
+function searchTable(q){
+  q=q.toLowerCase();
+  renderTable(filteredData.filter(d=>JSON.stringify(d).toLowerCase().includes(q)));
+}
+
+/* ---------- UTILS ---------- */
+function resetAll(){
+  ['invF','comF','typF'].forEach(id=>document.getElementById(id).selectedIndex=0);
+  applyFilters();
+}
 function exportExcel(){
-  const ws=XLSX.utils.json_to_sheet(drillData.length?drillData:filteredData);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,"Investments");
-  XLSX.writeFile(wb,"Investment_Data.xlsx");
+  const ws = XLSX.utils.json_to_sheet(filteredData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Investments");
+  XLSX.writeFile(wb, "Investments.xlsx");
 }
 function exportPDF(){
   html2pdf().from(document.body).save("Investment_Report.pdf");
-}
-function clearDrill(){
-  drillData=[];
-  showTab('insights');
-  applyFilters();
-}
-function clearFilter(id){
-  [...document.getElementById(id).options]
-    .forEach(o=>o.selected=o.value==='All');
-  applyFilters();
-}
-function resetAll(){
-  ['invF','comF','typF'].forEach(clearFilter);
 }
 </script>
 
