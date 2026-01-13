@@ -2,29 +2,31 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AG Group | Investment Dashboard</title>
+<title>AG Group | Portfolio Command Center</title>
 
+<!-- Libraries -->
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-:root {
-  --bg:#f4f6f8;
+:root{
+  --bg:#f0f2f5;
   --card:#ffffff;
   --primary:#1a365d;
-  --muted:#718096;
   --accent:#d69e2e;
+  --muted:#718096;
 }
 
-body {
+body{
   margin:0;
-  font-family: Inter, system-ui, sans-serif;
+  font-family:Inter,system-ui,sans-serif;
   background:var(--bg);
   color:#2d3748;
 }
 
-header {
+/* HEADER */
+header{
   background:var(--primary);
   color:white;
   padding:20px 30px;
@@ -33,10 +35,18 @@ header {
   align-items:center;
 }
 
-header h1 { margin:0; font-size:22px; }
-header small { color:#cbd5e0; font-size:13px; }
+header h1{margin:0;font-size:22px}
+header small{color:#cbd5e0;font-size:13px}
 
-button {
+/* CONTAINER */
+.container{
+  max-width:1600px;
+  margin:auto;
+  padding:25px;
+}
+
+/* BUTTONS */
+button{
   padding:6px 12px;
   border:none;
   border-radius:6px;
@@ -44,60 +54,67 @@ button {
   font-size:12px;
 }
 
-.container {
-  padding:25px;
-  max-width:1600px;
-  margin:auto;
-}
-
-.card {
+/* FILTER BAR */
+.filters{
   background:var(--card);
-  border-radius:12px;
   padding:20px;
-  box-shadow:0 4px 6px rgba(0,0,0,.05);
-  margin-bottom:20px;
-}
-
-.section-title {
-  font-size:16px;
-  font-weight:700;
-  margin-bottom:15px;
-}
-
-/* FILTERS */
-.filters {
+  border-radius:12px;
   display:flex;
   gap:20px;
   flex-wrap:wrap;
   align-items:flex-end;
+  box-shadow:0 4px 6px rgba(0,0,0,.05);
+  margin-bottom:20px;
 }
 
-.filter-group label {
+.filter-group label{
   font-size:11px;
   font-weight:700;
   color:var(--muted);
 }
 
-.filter-group select {
+.filter-group select{
   width:200px;
-  height:110px;
+  height:120px;
+}
+
+/* TABS */
+.tabs{
+  margin-bottom:20px;
+}
+.tabs button{
+  margin-right:10px;
+}
+.tab{
+  display:none;
+}
+.tab.active{
+  display:block;
 }
 
 /* GRID */
-.grid {
+.grid{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:20px;
 }
 
+/* CARDS */
+.card{
+  background:var(--card);
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 4px 6px rgba(0,0,0,.05);
+  margin-bottom:20px;
+}
+
 /* TOP 5 */
-#top5 {
+#top5{
   display:grid;
   grid-template-columns:repeat(5,1fr);
   gap:15px;
 }
-
-.top-card {
+.top-card{
   background:#fffaf0;
   border-top:4px solid var(--accent);
   padding:12px;
@@ -107,30 +124,28 @@ button {
 }
 
 /* TABLE */
-.table-wrap {
-  max-height:550px;
+.table-wrap{
+  max-height:600px;
   overflow:auto;
 }
-
-table {
+table{
   width:100%;
   border-collapse:collapse;
   font-size:13px;
 }
-
-th {
+th{
   position:sticky;
   top:0;
   background:#f7fafc;
   padding:10px;
 }
-
-td {
+td{
   padding:10px;
   border-bottom:1px solid #edf2f7;
 }
 
-#drillInfo {
+/* DRILL INFO */
+#drillInfo{
   display:none;
   background:#fffaf0;
   border:1px solid #feebc8;
@@ -139,10 +154,10 @@ td {
   margin-bottom:10px;
 }
 
-.footer {
+.footer{
+  text-align:right;
   font-size:12px;
   color:var(--muted);
-  text-align:right;
 }
 </style>
 </head>
@@ -164,7 +179,7 @@ td {
 <div class="container">
 
 <!-- FILTERS -->
-<div class="card filters">
+<div class="filters">
   <div class="filter-group">
     <label>Investor</label><br>
     <select id="invF" multiple></select><br>
@@ -185,63 +200,75 @@ td {
   </div>
 </div>
 
-<!-- INSIGHTS -->
-<div class="section-title">Portfolio Insights</div>
-<div class="grid">
-  <div class="card">
-    <h3>Company Concentration</h3>
-    <div id="companyPie"></div>
-  </div>
-  <div class="card">
-    <h3>Asset Mix</h3>
-    <div id="typeDonut" style="height:420px"></div>
-  </div>
+<!-- TABS -->
+<div class="tabs">
+  <button onclick="showTab('insights')">Portfolio Insights</button>
+  <button onclick="showTab('repo')">Detailed Investment Repository</button>
 </div>
 
-<!-- TOP 5 -->
-<div class="section-title">Top 5 Summary</div>
-<div id="top5"></div>
+<!-- INSIGHTS TAB -->
+<div id="insights" class="tab active">
 
-<!-- REPOSITORY -->
-<div class="section-title" style="margin-top:30px">
-  Detailed Investment Repository
+  <div class="grid">
+    <div class="card">
+      <h3>Company Concentration</h3>
+      <div id="companyPie"></div>
+    </div>
+    <div class="card">
+      <h3>Asset Mix</h3>
+      <div id="typeDonut" style="height:420px"></div>
+    </div>
+  </div>
+
+  <h3>Top 5 Summary</h3>
+  <div id="top5"></div>
+
 </div>
 
-<div class="card">
+<!-- REPOSITORY TAB -->
+<div id="repo" class="tab">
+
   <div id="drillInfo">
     <span id="drillText"></span>
     <button onclick="clearDrill()">Clear Drill</button>
   </div>
 
-  <input type="text" id="searchBox" placeholder="Search in results..."
+  <input id="searchBox" placeholder="Search within results..."
     style="width:300px;padding:6px;margin-bottom:10px"
     onkeyup="applySearch()">
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Investor</th>
-          <th>Company</th>
-          <th>Type</th>
-          <th>Qty</th>
-          <th>Value (₹ L)</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Investor</th>
+            <th>Company</th>
+            <th>Type</th>
+            <th>Qty</th>
+            <th>Value (₹ L)</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
 
 <div class="footer">Confidential – For Client Use Only</div>
 </div>
 
 <script>
+/* ================= CONFIG ================= */
 const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLhf6NIZ6o8k4JVQQt3XVFwAgb-5h0UL-saIgjtF4PJTzhY5bVQPBHDnwrw1XVYL4OtzfKFMV2GiVVMMocZHY-JSorOpIKofX6dT1b2m1mjGXaKZzVgCVPLzB4SSYM7oH2wmz5Zfwbd_D5rD4k27gqgIiYmvSE3hqenxPFkYukj3qg2uvnI1bf5_Vf1z7m0AEyRpb3ZX7eSdUxsRezbB8WlJc5GtpNsiZobew_SI2z_6XNxJ9QhL-agOK91Zd-0XbWLVftPiZCbnOXXUq-IbF3jQFET18Q&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
 
+/* ================= STATE ================= */
 let rawData=[], filteredData=[], drillData=[];
+let activeTab="insights";
 
+/* ================= LOAD ================= */
 fetch(DATA_URL)
   .then(r=>r.json())
   .then(json=>{
@@ -249,38 +276,34 @@ fetch(DATA_URL)
     filteredData=rawData;
 
     document.getElementById("periodText").innerText=json.period||"--";
-    document.getElementById("lastUpdated").innerText=
-      "Last updated: "+(json.lastUpdated||new Date().toLocaleString());
+    document.getElementById("lastUpdated").innerText=json.lastUpdated||"--";
 
     initFilters();
     applyFilters();
   });
 
-/* FILTERS */
+/* ================= TABS ================= */
+function showTab(tab){
+  activeTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+}
+
+/* ================= FILTERS ================= */
 function initFilters(){
   fill('invF','Investor');
   fill('comF','Name of the Company');
   fill('typF','Type');
 }
 function fill(id,key){
-  const sel=document.getElementById(id);
+  const s=document.getElementById(id);
   const vals=[...new Set(rawData.map(d=>d[key]))].sort();
-  sel.innerHTML='<option value="All" selected>All</option>'+
-    vals.map(v=>`<option>${v}</option>`).join('');
-  sel.onchange=applyFilters;
+  s.innerHTML='<option value="All" selected>All</option>'+
+    vals.map(v=>`<option value="${v}">${v}</option>`).join('');
+  s.onchange=applyFilters;
 }
-function getSel(id){
+function selected(id){
   return [...document.getElementById(id).selectedOptions].map(o=>o.value);
-}
-function applyFilters(){
-  const iv=getSel('invF'), co=getSel('comF'), ty=getSel('typF');
-  filteredData=rawData.filter(d=>
-    (iv.includes('All')||iv.includes(d.Investor)) &&
-    (co.includes('All')||co.includes(d['Name of the Company'])) &&
-    (ty.includes('All')||ty.includes(d.Type))
-  );
-  drillData=[];
-  renderAll(filteredData);
 }
 function clearFilter(id){
   [...document.getElementById(id).options].forEach(o=>o.selected=o.value==='All');
@@ -290,15 +313,25 @@ function resetAll(){
   ['invF','comF','typF'].forEach(clearFilter);
 }
 
-/* RENDER */
+/* ================= APPLY ================= */
+function applyFilters(){
+  drillData=[];
+  filteredData=rawData.filter(d=>
+    (selected('invF').includes('All')||selected('invF').includes(d.Investor)) &&
+    (selected('comF').includes('All')||selected('comF').includes(d['Name of the Company'])) &&
+    (selected('typF').includes('All')||selected('typF').includes(d.Type))
+  );
+  renderAll(filteredData);
+}
+
+/* ================= RENDER ================= */
 function renderAll(data){
   renderTable(data);
-  renderCompanyPie(data);
-  renderTypeDonut(data);
+  renderCharts(data);
   renderTop5(data);
 }
 
-/* TABLE */
+/* ================= TABLE ================= */
 function renderTable(data){
   document.getElementById("tableBody").innerHTML=data.map(d=>`
     <tr>
@@ -311,81 +344,93 @@ function renderTable(data){
     </tr>`).join('');
 }
 
-/* SEARCH */
+/* ================= SEARCH ================= */
 function applySearch(){
   const q=document.getElementById("searchBox").value.toLowerCase();
   const base=drillData.length?drillData:filteredData;
-  renderTable(base.filter(d=>
-    Object.values(d).join(' ').toLowerCase().includes(q)
-  ));
+  renderTable(base.filter(d=>JSON.stringify(d).toLowerCase().includes(q)));
 }
 
-/* PIE */
-function renderCompanyPie(data){
-  const map={}, small=[], total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
-  data.forEach(d=>map[d['Name of the Company']]=(map[d['Name of the Company']]||0)+(+d.Value||0)/100000);
+/* ================= CHARTS ================= */
+function renderCharts(data){
+  const total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
+
+  // COMPANY PIE
+  const cMap={}, small=[];
+  data.forEach(d=>cMap[d['Name of the Company']] =
+    (cMap[d['Name of the Company']]||0)+(+d.Value||0)/100000);
+
   const labels=[],values=[];
-  Object.entries(map).forEach(([k,v])=>v/total<0.02?small.push(k):(labels.push(k),values.push(v)));
-  if(small.length){labels.push('Others (<2%)');values.push(small.reduce((a,c)=>a+map[c],0));}
+  Object.entries(cMap).forEach(([k,v])=>{
+    v/total<0.02?small.push(k):(labels.push(k),values.push(v));
+  });
+  if(small.length){
+    labels.push('Others (<2%)');
+    values.push(small.reduce((a,c)=>a+cMap[c],0));
+  }
+
   Plotly.newPlot('companyPie',[{labels,values,type:'pie',hole:0.35}],
     {annotations:[{text:'₹ '+total.toFixed(2)+' L',showarrow:false}]});
+
   document.getElementById("companyPie").on("plotly_click",e=>{
     const l=e.points[0].label;
     drillData=l==='Others (<2%)'
       ? filteredData.filter(d=>small.includes(d['Name of the Company']))
       : filteredData.filter(d=>d['Name of the Company']===l);
-    showDrill('Company: '+l,drillData);
+    activateDrill('Company: '+l);
   });
-}
 
-/* DONUT */
-function renderTypeDonut(data){
-  const map={}, total=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
-  data.forEach(d=>map[d.Type]=(map[d.Type]||0)+(+d.Value||0)/100000);
-  Plotly.newPlot('typeDonut',[{labels:Object.keys(map),values:Object.values(map),type:'pie',hole:0.6}],
+  // ASSET DONUT
+  const tMap={};
+  data.forEach(d=>tMap[d.Type]=(tMap[d.Type]||0)+(+d.Value||0)/100000);
+
+  Plotly.newPlot('typeDonut',[{labels:Object.keys(tMap),values:Object.values(tMap),type:'pie',hole:0.6}],
     {annotations:[{text:'₹ '+total.toFixed(2)+' L',showarrow:false,font:{size:18}}]});
+
   document.getElementById("typeDonut").on("plotly_click",e=>{
     const l=e.points[0].label;
     drillData=filteredData.filter(d=>d.Type===l);
-    showDrill('Type: '+l,drillData);
+    activateDrill('Type: '+l);
   });
 }
 
-/* DRILL */
-function showDrill(t,data){
-  document.getElementById("drillText").innerText=t;
+/* ================= DRILL ================= */
+function activateDrill(text){
+  document.getElementById("drillText").innerText=text;
   document.getElementById("drillInfo").style.display='block';
-  renderTable(data);
-  renderTop5(data);
+  showTab('repo');
+  renderTable(drillData);
+  renderTop5(drillData);
 }
 function clearDrill(){
   drillData=[];
   document.getElementById("drillInfo").style.display='none';
+  showTab('insights');
   applyFilters();
 }
 
-/* TOP 5 */
+/* ================= TOP 5 ================= */
 function renderTop5(data){
-  const iv=getSel('invF'), co=getSel('comF');
-  let map={}, title='';
-  if(co.length===1 && !co.includes('All')){
-    title='Top 5 Investors';
+  let map={};
+
+  if(selected('comF').length===1 && !selected('comF').includes('All')){
     data.forEach(d=>map[d.Investor]=(map[d.Investor]||0)+(+d.Value||0)/100000);
-  } else if(iv.length===1 && !iv.includes('All')){
-    title='Top 5 Investments';
-    data.forEach(d=>map[d['Name of the Company']] =
-      (map[d['Name of the Company']]||0)+(+d.Value||0)/100000);
-  } else {
-    title='Top 5 Investments (Group)';
+  }
+  else if(selected('invF').length===1 && !selected('invF').includes('All')){
     data.forEach(d=>map[d['Name of the Company']] =
       (map[d['Name of the Company']]||0)+(+d.Value||0)/100000);
   }
-  const top=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  else{
+    data.forEach(d=>map[d['Name of the Company']] =
+      (map[d['Name of the Company']]||0)+(+d.Value||0)/100000);
+  }
+
   document.getElementById("top5").innerHTML=
-    top.map(([k,v])=>`<div class="top-card"><b>${k}</b><br>₹ ${v.toFixed(2)} L</div>`).join('');
+    Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5)
+      .map(([k,v])=>`<div class="top-card"><b>${k}</b><br>₹ ${v.toFixed(2)} L</div>`).join('');
 }
 
-/* EXPORT */
+/* ================= EXPORT ================= */
 function exportExcel(){
   const ws=XLSX.utils.json_to_sheet(drillData.length?drillData:filteredData);
   const wb=XLSX.utils.book_new();
