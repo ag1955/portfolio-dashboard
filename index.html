@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>AG Group | Investment Dashboard</title>
 
-<!-- Libraries -->
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -46,22 +45,10 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
 
 <!-- FILTERS -->
 <div class="card filters">
-  <div>
-    Investor<br>
-    <select id="invF" multiple></select>
-  </div>
-  <div>
-    Company<br>
-    <select id="comF" multiple></select>
-  </div>
-  <div>
-    Type<br>
-    <select id="typF" multiple></select>
-  </div>
-  <div>
-    <br>
-    <button onclick="resetAll()">Reset All</button>
-  </div>
+  <div>Investor<br><select id="invF" multiple></select></div>
+  <div>Company<br><select id="comF" multiple></select></div>
+  <div>Type<br><select id="typF" multiple></select></div>
+  <div><br><button onclick="resetAll()">Reset All</button></div>
 </div>
 
 <!-- TABS -->
@@ -70,7 +57,6 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
 
 <!-- INSIGHTS -->
 <div id="insights" class="tab active">
-
   <div class="grid">
     <div class="card">
       <h3 id="pieTitle"></h3>
@@ -81,10 +67,8 @@ td{padding:8px;border-bottom:1px solid #edf2f7}
       <div id="typeDonut"></div>
     </div>
   </div>
-
   <h3>Top 5 Summary</h3>
   <div id="top5"></div>
-
 </div>
 
 <!-- REPOSITORY -->
@@ -115,10 +99,10 @@ const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_
 let rawData = [];
 let filteredData = [];
 
-/* ---------- LOAD ---------- */
+/* LOAD */
 fetch(DATA_URL)
-  .then(r => r.json())
-  .then(json => {
+  .then(r=>r.json())
+  .then(json=>{
     rawData = json.data || [];
     document.getElementById("periodText").innerText = json.period || "--";
     document.getElementById("lastUpdated").innerText = json.lastUpdated || "--";
@@ -126,130 +110,138 @@ fetch(DATA_URL)
     applyFilters();
   });
 
-/* ---------- TABS ---------- */
+/* TABS */
 function showTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(tab).classList.add('active');
 }
 
-/* ---------- FILTER HELPERS ---------- */
+/* FILTER HELPERS */
 function selected(id){
   return [...document.getElementById(id).selectedOptions].map(o=>o.value);
 }
 
-function buildFilter(id, key, data){
-  const sel = document.getElementById(id);
-  const prev = selected(id);
-  const vals = [...new Set(data.map(d=>d[key]))].sort();
+function buildFilter(id,key,data){
+  const sel=document.getElementById(id);
+  const prev=selected(id);
+  const vals=[...new Set(data.map(d=>d[key]))].sort();
 
-  sel.innerHTML =
-    '<option value="All">All</option>' +
+  sel.innerHTML='<option value="All">All</option>'+
     vals.map(v=>`<option value="${v}">${v}</option>`).join('');
 
   [...sel.options].forEach(o=>{
     if(prev.includes(o.value) || (prev.length===0 && o.value==="All")){
-      o.selected = true;
+      o.selected=true;
     }
   });
 }
 
-/* ---------- FILTER INIT ---------- */
+/* INIT FILTERS */
 function initFilters(){
   ['invF','comF','typF'].forEach(id=>{
-    document.getElementById(id).onchange = applyFilters;
+    document.getElementById(id).onchange=applyFilters;
   });
-  rebuildAllFilters(rawData);
+  rebuildFilters(rawData);
 }
 
-function rebuildAllFilters(base){
+function rebuildFilters(base){
   buildFilter('invF','Investor',base);
   buildFilter('comF','Name of the Company',base);
   buildFilter('typF','Type',base);
 }
 
-/* ---------- APPLY FILTERS ---------- */
+/* APPLY FILTERS */
 function applyFilters(){
-  const iv = selected('invF');
-  const co = selected('comF');
-  const ty = selected('typF');
+  const iv=selected('invF');
+  const co=selected('comF');
+  const ty=selected('typF');
 
   filteredData = rawData.filter(d =>
-    (iv.includes("All") || iv.includes(d.Investor)) &&
-    (co.includes("All") || co.includes(d["Name of the Company"])) &&
-    (ty.includes("All") || ty.includes(d.Type))
+    (iv.includes("All")||iv.includes(d.Investor)) &&
+    (co.includes("All")||co.includes(d["Name of the Company"])) &&
+    (ty.includes("All")||ty.includes(d.Type))
   );
 
   buildFilter('invF','Investor',
-    rawData.filter(d =>
-      (co.includes("All") || co.includes(d["Name of the Company"])) &&
-      (ty.includes("All") || ty.includes(d.Type))
+    rawData.filter(d=>
+      (co.includes("All")||co.includes(d["Name of the Company"])) &&
+      (ty.includes("All")||ty.includes(d.Type))
     )
   );
 
   buildFilter('comF','Name of the Company',
-    rawData.filter(d =>
-      (iv.includes("All") || iv.includes(d.Investor)) &&
-      (ty.includes("All") || ty.includes(d.Type))
+    rawData.filter(d=>
+      (iv.includes("All")||iv.includes(d.Investor)) &&
+      (ty.includes("All")||ty.includes(d.Type))
     )
   );
 
   buildFilter('typF','Type',
-    rawData.filter(d =>
-      (iv.includes("All") || iv.includes(d.Investor)) &&
-      (co.includes("All") || co.includes(d["Name of the Company"]))
+    rawData.filter(d=>
+      (iv.includes("All")||iv.includes(d.Investor)) &&
+      (co.includes("All")||co.includes(d["Name of the Company"]))
     )
   );
 
   renderAll();
 }
 
-/* ---------- RENDER ---------- */
+/* RENDER */
 function renderAll(){
   renderCharts();
   renderTop5();
   renderTable(filteredData);
 }
 
-/* ---------- CHARTS ---------- */
+/* CHARTS */
 function renderCharts(){
-  const iv = selected('invF');
-  const co = selected('comF');
-  const total = filteredData.reduce((a,b)=>a+(+b.Value||0),0)/100000;
+  const iv=selected('invF');
+  const co=selected('comF');
+  const total=filteredData.reduce((a,b)=>a+(+b.Value||0),0)/100000;
 
-  /* PIE */
-  let pieMap = {};
+  /* COMPANY PIE */
+  let pieTitle="";
+  let labels=[], values=[];
   if(co.length===1 && !co.includes("All")){
-    document.getElementById("pieTitle").innerText = "Investor-wise Holding";
+    pieTitle="Investor-wise Holding";
+    const map={};
     filteredData.forEach(d=>{
-      pieMap[d.Investor]=(pieMap[d.Investor]||0)+(+d.Value||0)/100000;
+      map[d.Investor]=(map[d.Investor]||0)+(+d.Value||0)/100000;
     });
+    labels=Object.keys(map);
+    values=Object.values(map);
   } else {
-    document.getElementById("pieTitle").innerText = "Company Concentration";
+    pieTitle="Company Concentration";
+    const rawMap={};
     filteredData.forEach(d=>{
-      pieMap[d["Name of the Company"]] =
-        (pieMap[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
+      rawMap[d["Name of the Company"]] =
+        (rawMap[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
     });
+    let others=0;
+    Object.entries(rawMap).forEach(([k,v])=>{
+      if(v/total < 0.02) others+=v;
+      else { labels.push(k); values.push(v); }
+    });
+    if(others>0){ labels.push("Others (<2%)"); values.push(others); }
   }
 
+  document.getElementById("pieTitle").innerText=pieTitle;
   Plotly.newPlot("companyPie",[{
-    labels:Object.keys(pieMap),
-    values:Object.values(pieMap),
-    type:"pie",
-    hole:0.35
+    labels, values, type:"pie", hole:0.35
   }],{
     annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]
   });
 
   /* DONUT */
-  document.getElementById("donutTitle").innerText = "Type Mix";
-  let donutMap = {};
+  document.getElementById("donutTitle").innerText="Type Mix";
+  const tMap={};
   filteredData.forEach(d=>{
-    donutMap[d.Type]=(donutMap[d.Type]||0)+(+d.Value||0)/100000;
+    tMap[d.Type]=(tMap[d.Type]||0)+(+d.Value||0)/100000;
   });
 
   Plotly.newPlot("typeDonut",[{
-    labels:Object.keys(donutMap),
-    values:Object.values(donutMap),
+    labels:Object.keys(tMap),
+    values:Object.values(tMap),
     type:"pie",
     hole:0.6
   }],{
@@ -257,11 +249,11 @@ function renderCharts(){
   });
 }
 
-/* ---------- TOP 5 ---------- */
+/* TOP 5 */
 function renderTop5(){
-  let map = {};
-  const iv = selected('invF');
-  const co = selected('comF');
+  const iv=selected('invF');
+  const co=selected('comF');
+  let map={};
 
   if(co.length===1 && !co.includes("All")){
     filteredData.forEach(d=>{
@@ -280,24 +272,22 @@ function renderTop5(){
   }
 
   document.getElementById("top5").innerHTML =
-    Object.entries(map)
-      .sort((a,b)=>b[1]-a[1])
-      .slice(0,5)
+    Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5)
       .map(([k,v])=>`<div class="top">${k}<br>₹ ${v.toFixed(2)} L</div>`)
       .join('');
 }
 
-/* ---------- TABLE ---------- */
+/* TABLE */
 function renderTable(data){
   document.getElementById("tableBody").innerHTML =
-    data.map(r=>`
+    data.map(d=>`
       <tr>
-        <td>${r.Investor}</td>
-        <td>${r["Name of the Company"]}</td>
-        <td>${r.Type}</td>
-        <td>${r.Qty}</td>
-        <td>${(+r.Value/100000).toFixed(2)}</td>
-        <td>${r.DOA}</td>
+        <td>${d.Investor}</td>
+        <td>${d["Name of the Company"]}</td>
+        <td>${d.Type}</td>
+        <td>${d.Qty}</td>
+        <td>${(+d.Value/100000).toFixed(2)}</td>
+        <td>${d.DOA}</td>
       </tr>`).join('');
 }
 
@@ -306,16 +296,16 @@ function searchTable(q){
   renderTable(filteredData.filter(d=>JSON.stringify(d).toLowerCase().includes(q)));
 }
 
-/* ---------- UTILS ---------- */
+/* UTILS */
 function resetAll(){
   ['invF','comF','typF'].forEach(id=>document.getElementById(id).selectedIndex=0);
   applyFilters();
 }
 function exportExcel(){
-  const ws = XLSX.utils.json_to_sheet(filteredData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Investments");
-  XLSX.writeFile(wb, "Investments.xlsx");
+  const ws=XLSX.utils.json_to_sheet(filteredData);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Data");
+  XLSX.writeFile(wb,"Investments.xlsx");
 }
 function exportPDF(){
   html2pdf().from(document.body).save("Investment_Report.pdf");
@@ -324,4 +314,3 @@ function exportPDF(){
 
 </body>
 </html>
-
