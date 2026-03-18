@@ -144,7 +144,11 @@ applyFilters();
 });
 
 const s=v=>String(v||"");
-const selected=id=>[...document.getElementById(id).selectedOptions].map(o=>o.value);
+const selected=id=> {
+  const vals =
+  [...document.getElementById(id).selectedOptions].map(o=>o.value);
+  return vals.length ? vals : ["All"];
+};
 
 function initFilters(){
 ['invF','comF','typF'].forEach(id=>document.getElementById(id).onchange=applyFilters);
