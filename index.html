@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>AG Group Dashboard</title>
@@ -10,16 +10,16 @@
 
 <style>
 body{margin:0;font-family:Inter;background:#f4f6f8}
-header{background:#1a365d;color:#fff;padding:18px;display:flex;justify-content:space-between}
-.container{max-width:1600px;margin:auto;padding:20px}
+header{background:#1a365d;color:#fff;padding:15px;display:flex;justify-content:space-between}
+.container{max-width:1500px;margin:auto;padding:20px}
 .card{background:#fff;padding:15px;border-radius:10px;margin-bottom:20px}
-.filters{display:flex;gap:15px;flex-wrap:wrap}
-select{width:180px;height:110px}
+.filters{display:flex;gap:20px;flex-wrap:wrap}
+select{width:180px;height:120px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .top5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-.top5 div{background:#fffaf0;padding:10px;border-top:4px solid #d69e2e;text-align:center}
+.top5 div{background:#fffaf0;padding:10px;text-align:center;border-top:4px solid #d69e2e}
 .table-wrap{max-height:500px;overflow:auto}
-table{width:100%;border-collapse:collapse;text-align:center;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:12px;text-align:center}
 th,td{border:1px solid #e2e8f0;padding:6px}
 th{background:#f7fafc}
 .tab{display:none}
@@ -33,7 +33,7 @@ th{background:#f7fafc}
 <header>
 <div>
 <h2>AG Group Dashboard</h2>
-Period: <b id="periodText">--</b>
+Period: <b id="periodText"></b>
 </div>
 <div>
 <button onclick="exportPDF()">PDF</button>
@@ -45,50 +45,47 @@ Period: <b id="periodText">--</b>
 
 <div class="container">
 
-<!-- FILTERS -->
 <div class="card filters">
 <div>
 Investor<br>
 <select id="invF" multiple></select><br>
-<button onclick="clearFilter('invF')">Clear</button>
+<button onclick="clearF('invF')">Clear</button>
 </div>
 <div>
 Company<br>
 <select id="comF" multiple></select><br>
-<button onclick="clearFilter('comF')">Clear</button>
+<button onclick="clearF('comF')">Clear</button>
 </div>
 <div>
 Type<br>
 <select id="typF" multiple></select><br>
-<button onclick="clearFilter('typF')">Clear</button>
+<button onclick="clearF('typF')">Clear</button>
 </div>
 </div>
 
-<button onclick="showTab('insights')">Insights</button>
+<button onclick="showTab('ins')">Insights</button>
 <button onclick="showTab('repo')">Repository</button>
 
 <!-- INSIGHTS -->
-<div id="insights" class="tab active">
+<div id="ins" class="tab active">
 
 <div class="grid">
 <div class="card">
 <h3 id="pieTitle">Company Concentration</h3>
-<div id="companyPie"></div>
+<div id="pie"></div>
 </div>
-
 <div class="card">
 <h3>Investment Mix</h3>
-<div id="typeDonut"></div>
+<div id="donut"></div>
 </div>
 </div>
 
 <div class="card">
-<h3 id="top5Title">Top 5</h3>
-<div id="top5Row" class="top5"></div>
+<h3 id="topTitle"></h3>
+<div id="top5" class="top5"></div>
 </div>
 
-<!-- DRILL -->
-<div id="drillSection" class="card" style="display:none">
+<div class="card" id="drillBox" style="display:none">
 <h3>Drill Down</h3>
 <input id="drillSearch" placeholder="Search..." oninput="renderDrill()">
 <div class="table-wrap">
@@ -96,7 +93,7 @@ Type<br>
 <thead>
 <tr>
 <th>Investor</th><th>Company</th><th>Type</th>
-<th>Qty</th><th>Rate</th><th>Value (L)</th><th>Date</th>
+<th>Qty</th><th>Rate</th><th>Value (₹ L)</th><th>Date</th>
 </tr>
 </thead>
 <tbody id="drillBody"></tbody>
@@ -106,21 +103,21 @@ Type<br>
 
 </div>
 
-<!-- REPO -->
+<!-- REPOSITORY -->
 <div id="repo" class="tab">
-<div class="card">
-Total Qty: <b id="totalQty"></b> |
-Total Value: <b id="totalValue"></b>
-</div>
-
 <input id="repoSearch" placeholder="Search..." oninput="renderRepo()">
+
+<div class="card">
+Total Qty: <b id="tQty"></b> |
+Total Value: <b id="tVal"></b>
+</div>
 
 <div class="table-wrap">
 <table id="repoTable">
 <thead>
 <tr>
 <th>Investor</th><th>Company</th><th>Type</th>
-<th>Qty</th><th>Rate</th><th>Value (L)</th><th>Date</th>
+<th>Qty</th><th>Rate</th><th>Value (₹ L)</th><th>Date</th>
 </tr>
 </thead>
 <tbody id="repoBody"></tbody>
@@ -131,10 +128,13 @@ Total Value: <b id="totalValue"></b>
 </div>
 
 <script>
-const DATA_URL="https://script.googleusercontent.com/macros/echo?user_content_key=AWDtjMVjq0MfxqN3nVfRFzv26s5evN-5m7Qn8Yr6saVnyBArSHVSPM6spfnbbYchG-_705UKGveR7y9g-VNBYsVr3kN84Tir8j7_NWBVPXeSMF9m9GA0uJPDIAweFFHyZP2WEzTsWkxHUPy5EtdUt1ayH44BaOilAlipnvIwaQRJHfnNmymHOrR1OSa8Bw_eAlOLnvve9lbh8SECpVaFmlTymH6-H4GZQcm92up56BEiEFRiKDI2da16SIqsy5KILI5DtYGzDzRk5DceVL_ekfHYvhwKY1wVAA&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
 
-let rawData=[],filteredData=[],drillData=[];
+/* ================= STATE ================= */
+const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AWDtjMVNqMyqhV1HMJoXDzxvP4z1fHOxvx_V_5wdWgRnISm8kyxev9i3zlyotfVQR9l1s7EhvYkHdx-qcxxzstBc8wKzpVcRjuLoJ49L-tCYJ0LVGqZk5IKOc_O9ewxondZp-0YU0P0gWEOwiQCTm0yVZk6N5EakM-EKH8-HnlKYpEHMvG79X48UurFsUp32pQrXx2PODZ5sbgNAL8zkvWrCA4NQtVvD8M1yJ5Kfscfyb22wAIBBTQuxV2mX4PNDwfk7OsO5t8X5wKdXMR992IkDOeNCkn0WoA&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
 
+let rawData=[], filteredData=[], drillData=[];
+
+/* ================= LOAD ================= */
 fetch(DATA_URL).then(r=>r.json()).then(j=>{
 rawData=j.data||[];
 periodText.innerText=j.period||"--";
@@ -143,122 +143,168 @@ initFilters();
 applyFilters();
 });
 
-const s=v=>String(v||"");
-const selected=id=>[...document.getElementById(id).selectedOptions].map(o=>o.value);
+/* ================= HELPERS ================= */
+const s=v=>String(v??"");
+const getSel=id=>{
+const vals=[...document.getElementById(id).selectedOptions].map(o=>o.value);
+return vals.length?vals:null;
+};
 
+/* ================= FILTERS ================= */
 function initFilters(){
-['invF','comF','typF'].forEach(id=>document.getElementById(id).onchange=applyFilters);
-buildFilters(rawData);
+['invF','comF','typF'].forEach(id=>{
+document.getElementById(id).onchange=applyFilters;
+});
+rebuildFilters(rawData);
 }
 
-function buildFilters(data){
-fill('invF','Investor',data);
-fill('comF','Name of the Company',data);
-fill('typF','Type',data);
+function rebuildFilters(data){
+build('invF','Investor',data);
+build('comF','Name of the Company',data);
+build('typF','Type',data);
 }
 
-function fill(id,key,data){
+function build(id,key,data){
 const sel=document.getElementById(id);
-const vals=[...new Set(data.map(d=>s(d[key])))].filter(v=>v).sort();
-sel.innerHTML='<option value="All">All</option>'+vals.map(v=>`<option>${v}</option>`).join('');
+const prev=[...sel.selectedOptions].map(o=>o.value);
+const vals=[...new Set(data.map(d=>s(d[key])))]
+.filter(v=>v!=="").sort();
+
+sel.innerHTML=vals.map(v=>`<option ${prev.includes(v)?"selected":""}>${v}</option>`).join('');
 }
 
 function applyFilters(){
 drillData=[];
-drillSection.style.display="none";
+drillBox.style.display="none";
 
-const iv=selected('invF'),co=selected('comF'),ty=selected('typF');
+const iv=getSel('invF'),co=getSel('comF'),ty=getSel('typF');
 
 filteredData=rawData.filter(d=>
-(iv.includes("All")||iv.includes(s(d.Investor))) &&
-(co.includes("All")||co.includes(s(d["Name of the Company"]))) &&
-(ty.includes("All")||ty.includes(s(d.Type)))
+(!iv||iv.includes(s(d.Investor))) &&
+(!co||co.includes(s(d["Name of the Company"]))) &&
+(!ty||ty.includes(s(d.Type)))
 );
 
-buildFilters(filteredData);
+rebuildFilters(filteredData);
 renderAll();
 }
 
-function clearFilter(id){
-[...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
+function clearF(id){
+[...document.getElementById(id).options].forEach(o=>o.selected=false);
 applyFilters();
 }
 
 function resetAll(){
 drillData=[];
-drillSection.style.display="none";
+drillBox.style.display="none";
 ['invF','comF','typF'].forEach(id=>{
-[...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
+[...document.getElementById(id).options].forEach(o=>o.selected=false);
 });
 applyFilters();
 }
 
+/* ================= TABS ================= */
 function showTab(t){
 document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
 document.getElementById(t).classList.add('active');
 }
 
+/* ================= RENDER ================= */
 function renderAll(){
 renderCharts();
 renderTop5();
 renderRepo();
 }
 
+/* ================= CHARTS ================= */
 function renderCharts(){
+
+const iv=getSel('invF');
+const co=getSel('comF');
+
 const total=filteredData.reduce((a,b)=>a+(+b.Value||0),0)/100000;
-const selCom=selected('comF').filter(x=>x!=="All");
 
-let labels=[],values=[],others=0;
+let map={},labels=[],values=[],others=0;
 
-if(selCom.length===1){
+if(co && co.length===1){
 pieTitle.innerText="Investor-wise Holding";
-const m={};
 filteredData.forEach(d=>{
-m[d.Investor]=(m[d.Investor]||0)+(+d.Value||0)/100000;
+map[d.Investor]=(map[d.Investor]||0)+(+d.Value||0)/100000;
 });
-labels=Object.keys(m);values=Object.values(m);
-}else{
+labels=Object.keys(map);
+values=Object.values(map);
+}
+else if(iv && iv.length===1){
+pieTitle.innerText="Company-wise Holding";
+filteredData.forEach(d=>{
+map[d["Name of the Company"]]=(map[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
+});
+labels=Object.keys(map);
+values=Object.values(map);
+}
+else{
 pieTitle.innerText="Company Concentration";
-const m={};
 filteredData.forEach(d=>{
-m[d["Name of the Company"]]=(m[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
+map[d["Name of the Company"]]=(map[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
 });
-Object.entries(m).forEach(([k,v])=>{
-if(v/total<0.02) others+=v;
+
+Object.entries(map).forEach(([k,v])=>{
+if(total>0 && v/total<0.02) others+=v;
 else{labels.push(k);values.push(v);}
 });
-if(others>0){labels.push("Others (<2%)");values.push(others);}
+if(others>0){
+labels.push("Others (<2%)");
+values.push(others);
+}
 }
 
-Plotly.newPlot(companyPie,[{labels,values,type:"pie",hole:0.35}],
+Plotly.newPlot(pie,[{labels,values,type:'pie',hole:0.35}],
 {annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]});
 
-companyPie.on("plotly_click",e=>{
-const l=e.points[0].label;
-drillData=filteredData.filter(d=>JSON.stringify(d).includes(l));
-drillSection.style.display="block";
+pie.on("plotly_click",e=>{
+const label=e.points[0].label;
+
+drillData=filteredData.filter(d=>
+d.Investor===label ||
+d["Name of the Company"]===label ||
+d.Type===label
+);
+
+drillBox.style.display="block";
 renderDrill();
 });
 
-const typeMap={};
+/* DONUT */
+const tMap={};
 filteredData.forEach(d=>{
-typeMap[d.Type]=(typeMap[d.Type]||0)+(+d.Value||0)/100000;
+tMap[d.Type]=(tMap[d.Type]||0)+(+d.Value||0)/100000;
 });
 
-Plotly.newPlot(typeDonut,[{labels:Object.keys(typeMap),values:Object.values(typeMap),type:"pie",hole:0.6}],
-{annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]});
+Plotly.newPlot(donut,[{
+labels:Object.keys(tMap),
+values:Object.values(tMap),
+type:'pie',
+hole:0.6
+}],{
+annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]
+});
 
-typeDonut.on("plotly_click",e=>{
-const l=e.points[0].label;
-drillData=filteredData.filter(d=>d.Type===l);
-drillSection.style.display="block";
+donut.on("plotly_click",e=>{
+const label=e.points[0].label;
+drillData=filteredData.filter(d=>d.Type===label);
+drillBox.style.display="block";
 renderDrill();
 });
 }
 
+/* ================= DRILL ================= */
 function renderDrill(){
 const q=drillSearch.value.toLowerCase();
-const data=drillData.filter(d=>JSON.stringify(d).toLowerCase().includes(q));
+
+const data=drillData.filter(d=>
+JSON.stringify(d).toLowerCase().includes(q)
+);
+
 drillBody.innerHTML=data.map(d=>`
 <tr>
 <td>${d.Investor}</td>
@@ -271,27 +317,64 @@ drillBody.innerHTML=data.map(d=>`
 </tr>`).join('');
 }
 
+/* ================= TOP 5 ================= */
 function renderTop5(){
+
+const iv=getSel('invF');
+const co=getSel('comF');
+
 const base=drillData.length?drillData:filteredData;
-const map={},qtyMap={};
+
 const total=base.reduce((a,b)=>a+(+b.Value||0),0)/100000;
 
-base.forEach(d=>{
-const k=d["Name of the Company"];
-map[k]=(map[k]||0)+(+d.Value||0)/100000;
-qtyMap[k]=(qtyMap[k]||0)+(+d.Qty||0);
-});
+let map={},qty={},title="";
 
-top5Row.innerHTML=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5)
+if(co && co.length===1){
+title="Top Investors";
+base.forEach(d=>{
+map[d.Investor]=(map[d.Investor]||0)+(+d.Value||0)/100000;
+qty[d.Investor]=(qty[d.Investor]||0)+(+d.Qty||0);
+});
+}
+else if(iv && iv.length===1){
+title="Top Companies";
+base.forEach(d=>{
+map[d["Name of the Company"]]=(map[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
+qty[d["Name of the Company"]]=(qty[d["Name of the Company"]]||0)+(+d.Qty||0);
+});
+}
+else{
+title="Top Companies";
+base.forEach(d=>{
+map[d["Name of the Company"]]=(map[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
+qty[d["Name of the Company"]]=(qty[d["Name of the Company"]]||0)+(+d.Qty||0);
+});
+}
+
+topTitle.innerText=title;
+
+top5.innerHTML=Object.entries(map)
+.sort((a,b)=>b[1]-a[1])
+.slice(0,5)
 .map(([k,v])=>{
 const pct=total>0?((v/total)*100).toFixed(1):0;
-return `<div><b>${k}</b><br>Qty:${qtyMap[k]}<br>₹${v.toFixed(2)}L<br>${pct}%</div>`;
+return `
+<div>
+<b>${k}</b><br>
+Qty: ${qty[k]}<br>
+₹ ${v.toFixed(2)} L<br>
+${pct}%
+</div>`;
 }).join('');
 }
 
+/* ================= REPO ================= */
 function renderRepo(){
 const q=repoSearch.value.toLowerCase();
-const data=filteredData.filter(d=>JSON.stringify(d).toLowerCase().includes(q));
+
+const data=filteredData.filter(d=>
+JSON.stringify(d).toLowerCase().includes(q)
+);
 
 repoBody.innerHTML=data.map(d=>`
 <tr>
@@ -306,43 +389,65 @@ repoBody.innerHTML=data.map(d=>`
 
 const qty=data.reduce((a,b)=>a+(+b.Qty||0),0);
 const val=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
-totalQty.innerText=qty;
-totalValue.innerText="₹ "+val.toFixed(2)+" L";
+
+tQty.innerText=qty.toLocaleString();
+tVal.innerText="₹ "+val.toFixed(2)+" L";
 }
 
+/* ================= EXPORT ================= */
 async function exportPDF(){
-const pie=await Plotly.toImage(companyPie,{format:"png"});
-const donut=await Plotly.toImage(typeDonut,{format:"png"});
+
+const pieImg=await Plotly.toImage(pie,{format:"png",width:700,height:500});
+const donutImg=await Plotly.toImage(donut,{format:"png",width:700,height:500});
 
 const box=document.createElement("div");
+
 box.innerHTML=`
-<h2>AG Group Report</h2>
-<p>${periodText.innerText}</p>
+<h2>AG Group Investment Report</h2>
+<p>Period: ${periodText.innerText}</p>
+
 <h3>Company Concentration</h3>
-<img src="${pie}">
+<img src="${pieImg}" style="width:100%">
+
 <h3>Investment Mix</h3>
-<img src="${donut}">
+<img src="${donutImg}" style="width:100%">
+
+<h3>Top 5 Summary</h3>
+${top5.innerHTML}
+
 <div class="page-break"></div>
+
+<h3>Repository</h3>
+<p>Total Qty: ${tQty.innerText}<br>Total Value: ${tVal.innerText}</p>
+
 ${repoTable.outerHTML}
 `;
 
-html2pdf().from(box).save();
+html2pdf().set({
+margin:12,
+filename:"AG_Report.pdf",
+jsPDF:{format:"a3"},
+pagebreak:{mode:["css"]}
+}).from(box).save();
 }
 
 function exportExcel(){
 const wb=XLSX.utils.book_new();
-const rows=filteredData.map(d=>({
+
+const data=(drillData.length?drillData:filteredData).map(d=>({
 Investor:d.Investor,
 Company:d["Name of the Company"],
 Type:d.Type,
 Qty:d.Qty,
-Rate:d["Rate per share"],
-Value:(+d.Value/100000).toFixed(2),
+"Rate per Share":d["Rate per share"],
+"Value (₹ L)": (+d.Value/100000).toFixed(2),
 Date:d.DOA
 }));
-XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Data");
-XLSX.writeFile(wb,"Data.xlsx");
+
+XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),"Data");
+XLSX.writeFile(wb,"AG_Data.xlsx");
 }
+
 </script>
 
 </body>
