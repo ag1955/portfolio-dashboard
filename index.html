@@ -2,50 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AG Group | Investment Dashboard</title>
+<title>AG Group Dashboard</title>
 
-<!-- Libraries -->
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-/* ================= BASE ================= */
-body{margin:0;font-family:Inter,system-ui;background:#f4f6f8}
-header{background:#1a365d;color:#fff;padding:18px 25px;display:flex;justify-content:space-between;align-items:center}
-.container{max-width:1600px;margin:auto;padding:25px}
-.card{background:#fff;padding:16px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,.05);margin-bottom:20px}
-button{cursor:pointer;padding:6px 12px;border-radius:6px;border:1px solid #cbd5e0;background:#edf2f7}
-h3{margin-top:0}
-
-/* ================= FILTERS ================= */
-.filters{display:flex;gap:20px;flex-wrap:wrap}
-.filter-group select{width:200px;height:120px}
-
-/* ================= TABS ================= */
+body{margin:0;font-family:Inter;background:#f4f6f8}
+header{background:#1a365d;color:#fff;padding:18px;display:flex;justify-content:space-between}
+.container{max-width:1600px;margin:auto;padding:20px}
+.card{background:#fff;padding:15px;border-radius:10px;margin-bottom:20px}
+.filters{display:flex;gap:15px;flex-wrap:wrap}
+select{width:180px;height:110px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.top5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.top5 div{background:#fffaf0;padding:10px;border-top:4px solid #d69e2e;text-align:center}
+.table-wrap{max-height:500px;overflow:auto}
+table{width:100%;border-collapse:collapse;text-align:center;font-size:12px}
+th,td{border:1px solid #e2e8f0;padding:6px}
+th{background:#f7fafc}
 .tab{display:none}
 .tab.active{display:block}
-
-/* ================= GRIDS ================= */
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-
-/* ================= TABLES ================= */
-.table-wrap{max-height:500px;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:12px;text-align:center}
-thead{display:table-header-group}
-tr{page-break-inside:avoid}
-th{background:#f7fafc;padding:6px;border:1px solid #e2e8f0}
-td{padding:6px;border:1px solid #edf2f7}
-
-/* ================= TOP 5 ================= */
-.top5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-.top5 div{background:#fffaf0;border-top:4px solid #d69e2e;padding:10px;border-radius:8px;text-align:center}
-
-/* ================= DRILL ================= */
-#drillSection{display:none}
-#drillSearch{width:200px;padding:5px;margin-bottom:10px}
-
-/* ================= PDF ================= */
 .page-break{page-break-before:always}
 </style>
 </head>
@@ -53,352 +31,317 @@ td{padding:6px;border:1px solid #edf2f7}
 <body>
 
 <header>
-  <div>
-    <h2>AG Group – Investment Dashboard</h2>
-    Period: <b id="periodText">--</b>
-  </div>
-  <div>
-    <button onclick="exportPDF()">Export PDF</button>
-    <button onclick="exportExcel()">Export Excel</button>
-    <button onclick="resetAll()">Reset All</button><br>
-    <small id="lastUpdated">--</small>
-  </div>
+<div>
+<h2>AG Group Dashboard</h2>
+Period: <b id="periodText">--</b>
+</div>
+<div>
+<button onclick="exportPDF()">PDF</button>
+<button onclick="exportExcel()">Excel</button>
+<button onclick="resetAll()">Reset</button><br>
+<small id="lastUpdated"></small>
+</div>
 </header>
 
 <div class="container">
 
-<!-- ================= FILTERS ================= -->
+<!-- FILTERS -->
 <div class="card filters">
-  <div class="filter-group">
-    Investor<br>
-    <select id="invF" multiple></select><br>
-    <button onclick="clearFilter('invF')">Clear</button>
-  </div>
-  <div class="filter-group">
-    Company<br>
-    <select id="comF" multiple></select><br>
-    <button onclick="clearFilter('comF')">Clear</button>
-  </div>
-  <div class="filter-group">
-    Type<br>
-    <select id="typF" multiple></select><br>
-    <button onclick="clearFilter('typF')">Clear</button>
-  </div>
+<div>
+Investor<br>
+<select id="invF" multiple></select><br>
+<button onclick="clearFilter('invF')">Clear</button>
+</div>
+<div>
+Company<br>
+<select id="comF" multiple></select><br>
+<button onclick="clearFilter('comF')">Clear</button>
+</div>
+<div>
+Type<br>
+<select id="typF" multiple></select><br>
+<button onclick="clearFilter('typF')">Clear</button>
+</div>
 </div>
 
-<!-- ================= TABS ================= -->
 <button onclick="showTab('insights')">Insights</button>
 <button onclick="showTab('repo')">Repository</button>
 
-<!-- ================= INSIGHTS ================= -->
+<!-- INSIGHTS -->
 <div id="insights" class="tab active">
 
-  <div class="grid">
-    <div class="card">
-      <h3 id="pieTitle">Company Concentration</h3>
-      <div id="companyPie"></div>
-    </div>
-    <div class="card">
-      <h3>Investment Mix</h3>
-      <div id="typeDonut"></div>
-    </div>
-  </div>
+<div class="grid">
+<div class="card">
+<h3 id="pieTitle">Company Concentration</h3>
+<div id="companyPie"></div>
+</div>
 
-  <div class="card">
-    <h3 id="top5Title">Top 5 Summary</h3>
-    <div id="top5Row" class="top5"></div>
-  </div>
+<div class="card">
+<h3>Investment Mix</h3>
+<div id="typeDonut"></div>
+</div>
+</div>
 
-  <!-- DRILL TABLE -->
-  <div id="drillSection" class="card">
-    <h3>Drill Down Details</h3>
-    <input id="drillSearch" placeholder="Search drill results..." oninput="renderDrillTable()">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Investor</th><th>Company</th><th>Type</th>
-            <th>Qty</th><th>Rate per Share</th><th>Value (₹ L)</th><th>Date</th>
-          </tr>
-        </thead>
-        <tbody id="drillBody"></tbody>
-      </table>
-    </div>
-  </div>
+<div class="card">
+<h3 id="top5Title">Top 5</h3>
+<div id="top5Row" class="top5"></div>
+</div>
+
+<!-- DRILL -->
+<div id="drillSection" class="card" style="display:none">
+<h3>Drill Down</h3>
+<input id="drillSearch" placeholder="Search..." oninput="renderDrill()">
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Investor</th><th>Company</th><th>Type</th>
+<th>Qty</th><th>Rate</th><th>Value (L)</th><th>Date</th>
+</tr>
+</thead>
+<tbody id="drillBody"></tbody>
+</table>
+</div>
+</div>
 
 </div>
 
-<!-- ================= REPOSITORY ================= -->
+<!-- REPO -->
 <div id="repo" class="tab">
-  <div class="card">
-    <b>Total Qty:</b> <span id="totalQty">0</span> |
-    <b>Total Value:</b> <span id="totalValue">₹ 0.00 L</span>
-  </div>
+<div class="card">
+Total Qty: <b id="totalQty"></b> |
+Total Value: <b id="totalValue"></b>
+</div>
 
-  <input id="repoSearch" placeholder="Search repository..." oninput="renderRepository()">
+<input id="repoSearch" placeholder="Search..." oninput="renderRepo()">
 
-  <div class="table-wrap">
-    <table id="repoTable">
-      <thead>
-        <tr>
-          <th>Investor</th><th>Company</th><th>Type</th>
-          <th>Qty</th><th>Rate per Share</th><th>Value (₹ L)</th><th>Date</th>
-        </tr>
-      </thead>
-      <tbody id="repoBody"></tbody>
-    </table>
-  </div>
+<div class="table-wrap">
+<table id="repoTable">
+<thead>
+<tr>
+<th>Investor</th><th>Company</th><th>Type</th>
+<th>Qty</th><th>Rate</th><th>Value (L)</th><th>Date</th>
+</tr>
+</thead>
+<tbody id="repoBody"></tbody>
+</table>
+</div>
 </div>
 
 </div>
 
 <script>
-/* =====================================================
-   CONFIG
-===================================================== */
-const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiRnkJsxdwpys3O7Ls9ss9ZdK_xxzmJKtpGCzR4gTmgLSAPoGv5JkKJ9T81cjqGevK9sDIw9czAosNudJX-3k7ZEgFkooEFhMj4BxNYea5GyBubIn0VREBn47u8jtDc74MP8hShjvPI7gl83U4e5Xy3lAvi-QJmQ9aN4zwOsWEOn5ELXQ8Jl-rUJlKRZYon4EMUaKyIs53OGCiizRr-0bqtUs7sFzh9PonVLee9JhdpqG0y_f5t_GuHte-KZfDnvNAF_4KY3O-3RZLR2UatsLNlps4EAw&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
+const DATA_URL="https://script.googleusercontent.com/macros/echo?user_content_key=AWDtjMVjq0MfxqN3nVfRFzv26s5evN-5m7Qn8Yr6saVnyBArSHVSPM6spfnbbYchG-_705UKGveR7y9g-VNBYsVr3kN84Tir8j7_NWBVPXeSMF9m9GA0uJPDIAweFFHyZP2WEzTsWkxHUPy5EtdUt1ayH44BaOilAlipnvIwaQRJHfnNmymHOrR1OSa8Bw_eAlOLnvve9lbh8SECpVaFmlTymH6-H4GZQcm92up56BEiEFRiKDI2da16SIqsy5KILI5DtYGzDzRk5DceVL_ekfHYvhwKY1wVAA&lib=MLfLtmcdnFe_9PafX9g6m-beUs6YUnKQP";
 
-/* =====================================================
-   STATE (SINGLE SOURCE OF TRUTH)
-===================================================== */
-let rawData = [];
-let filteredData = [];
-let drillData = [];
+let rawData=[],filteredData=[],drillData=[];
 
-/* =====================================================
-   LOAD DATA
-===================================================== */
 fetch(DATA_URL).then(r=>r.json()).then(j=>{
-  rawData = j.data || [];
-  periodText.innerText = j.period || "--";
-  lastUpdated.innerText = j.lastUpdated || "--";
-  initFilters();
-  applyFilters();
+rawData=j.data||[];
+periodText.innerText=j.period||"--";
+lastUpdated.innerText=j.lastUpdated||"--";
+initFilters();
+applyFilters();
 });
 
-/* =====================================================
-   HELPERS
-===================================================== */
-const s = v => String(v ?? "");
-const selected = id => [...document.getElementById(id).selectedOptions].map(o=>o.value);
+const s=v=>String(v||"");
+const selected=id=>[...document.getElementById(id).selectedOptions].map(o=>o.value);
 
-/* =====================================================
-   FILTERS
-===================================================== */
 function initFilters(){
-  ['invF','comF','typF'].forEach(id=>document.getElementById(id).onchange=applyFilters);
-  rebuildFilters(rawData);
+['invF','comF','typF'].forEach(id=>document.getElementById(id).onchange=applyFilters);
+buildFilters(rawData);
 }
 
-function rebuildFilters(data){
-  rebuild('invF','Investor',data);
-  rebuild('comF','Name of the Company',data);
-  rebuild('typF','Type',data);
+function buildFilters(data){
+fill('invF','Investor',data);
+fill('comF','Name of the Company',data);
+fill('typF','Type',data);
 }
 
-function rebuild(id,key,data){
-  const sel=document.getElementById(id);
-  const prev=selected(id);
-  const vals=[...new Set(data.map(d=>s(d[key])))]
-    .filter(v=>v!=="").sort();
-  sel.innerHTML='<option value="All">All</option>'+vals.map(v=>`<option>${v}</option>`).join('');
-  [...sel.options].forEach(o=>{
-    if(prev.includes(o.value)||(!prev.length&&o.value==="All")) o.selected=true;
-  });
+function fill(id,key,data){
+const sel=document.getElementById(id);
+const vals=[...new Set(data.map(d=>s(d[key])))].filter(v=>v).sort();
+sel.innerHTML='<option value="All">All</option>'+vals.map(v=>`<option>${v}</option>`).join('');
 }
 
 function applyFilters(){
-  drillData = [];
-  drillSection.style.display="none";
+drillData=[];
+drillSection.style.display="none";
 
-  const iv=selected('invF'), co=selected('comF'), ty=selected('typF');
+const iv=selected('invF'),co=selected('comF'),ty=selected('typF');
 
-  filteredData = rawData.filter(d =>
-    (iv.includes("All")||iv.includes(s(d.Investor))) &&
-    (co.includes("All")||co.includes(s(d["Name of the Company"]))) &&
-    (ty.includes("All")||ty.includes(s(d.Type)))
-  );
+filteredData=rawData.filter(d=>
+(iv.includes("All")||iv.includes(s(d.Investor))) &&
+(co.includes("All")||co.includes(s(d["Name of the Company"]))) &&
+(ty.includes("All")||ty.includes(s(d.Type)))
+);
 
-  rebuildFilters(filteredData);
-  renderAll();
+buildFilters(filteredData);
+renderAll();
 }
 
 function clearFilter(id){
-  [...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
-  applyFilters();
+[...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
+applyFilters();
 }
 
 function resetAll(){
-  drillData=[];
-  drillSection.style.display="none";
-  ['invF','comF','typF'].forEach(id=>{
-    [...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
-  });
-  applyFilters();
+drillData=[];
+drillSection.style.display="none";
+['invF','comF','typF'].forEach(id=>{
+[...document.getElementById(id).options].forEach(o=>o.selected=o.value==="All");
+});
+applyFilters();
 }
 
-/* =====================================================
-   TABS
-===================================================== */
 function showTab(t){
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  document.getElementById(t).classList.add('active');
+document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+document.getElementById(t).classList.add('active');
 }
 
-/* =====================================================
-   RENDER PIPELINE
-===================================================== */
 function renderAll(){
-  renderCharts();
-  renderTop5();
-  renderRepository();
+renderCharts();
+renderTop5();
+renderRepo();
 }
 
-/* =====================================================
-   CHARTS
-===================================================== */
 function renderCharts(){
-  const total = filteredData.reduce((a,b)=>a+(+b.Value||0),0)/100000;
+const total=filteredData.reduce((a,b)=>a+(+b.Value||0),0)/100000;
+const selCom=selected('comF').filter(x=>x!=="All");
 
-  // Company Pie
-  const companyMap={}; let labels=[],values=[],others=0;
-  filteredData.forEach(d=>{
-    companyMap[s(d["Name of the Company"])] =
-      (companyMap[s(d["Name of the Company"])]||0)+(+d.Value||0)/100000;
-  });
-  Object.entries(companyMap).forEach(([k,v])=>{
-    if(v/total<0.02) others+=v;
-    else{labels.push(k);values.push(v);}
-  });
-  if(others>0){labels.push("Others (<2%)");values.push(others);}
+let labels=[],values=[],others=0;
 
-  Plotly.newPlot(companyPie,[{labels,values,type:"pie",hole:0.35}],
-    {annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]});
-
-  companyPie.on("plotly_click",e=>{
-    const l=e.points[0].label;
-    drillData = l==="Others (<2%)"
-      ? filteredData.filter(d=>(+d.Value||0)/100000/total<0.02)
-      : filteredData.filter(d=>s(d["Name of the Company"])===l);
-    drillSection.style.display="block";
-    renderDrillTable();
-  });
-
-  // Type Donut
-  const typeMap={};
-  filteredData.forEach(d=>{
-    typeMap[s(d.Type)] = (typeMap[s(d.Type)]||0)+(+d.Value||0)/100000;
-  });
-
-  Plotly.newPlot(typeDonut,[{labels:Object.keys(typeMap),values:Object.values(typeMap),type:"pie",hole:0.6}],
-    {annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]});
-
-  typeDonut.on("plotly_click",e=>{
-    const l=e.points[0].label;
-    drillData = filteredData.filter(d=>s(d.Type)===l);
-    drillSection.style.display="block";
-    renderDrillTable();
-  });
+if(selCom.length===1){
+pieTitle.innerText="Investor-wise Holding";
+const m={};
+filteredData.forEach(d=>{
+m[d.Investor]=(m[d.Investor]||0)+(+d.Value||0)/100000;
+});
+labels=Object.keys(m);values=Object.values(m);
+}else{
+pieTitle.innerText="Company Concentration";
+const m={};
+filteredData.forEach(d=>{
+m[d["Name of the Company"]]=(m[d["Name of the Company"]]||0)+(+d.Value||0)/100000;
+});
+Object.entries(m).forEach(([k,v])=>{
+if(v/total<0.02) others+=v;
+else{labels.push(k);values.push(v);}
+});
+if(others>0){labels.push("Others (<2%)");values.push(others);}
 }
 
-/* =====================================================
-   DRILL TABLE
-===================================================== */
-function renderDrillTable(){
-  const q = drillSearch.value.toLowerCase();
-  const data = drillData.filter(d=>JSON.stringify(d).toLowerCase().includes(q));
-  drillBody.innerHTML = data.map(d=>`
-    <tr>
-      <td>${d.Investor}</td>
-      <td>${d["Name of the Company"]}</td>
-      <td>${d.Type}</td>
-      <td>${d.Qty}</td>
-      <td>${d["Rate per share"]}</td>
-      <td>${(+d.Value/100000).toFixed(2)}</td>
-      <td>${d.DOA}</td>
-    </tr>`).join('');
+Plotly.newPlot(companyPie,[{labels,values,type:"pie",hole:0.35}],
+{annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]});
+
+companyPie.on("plotly_click",e=>{
+const l=e.points[0].label;
+drillData=filteredData.filter(d=>JSON.stringify(d).includes(l));
+drillSection.style.display="block";
+renderDrill();
+});
+
+const typeMap={};
+filteredData.forEach(d=>{
+typeMap[d.Type]=(typeMap[d.Type]||0)+(+d.Value||0)/100000;
+});
+
+Plotly.newPlot(typeDonut,[{labels:Object.keys(typeMap),values:Object.values(typeMap),type:"pie",hole:0.6}],
+{annotations:[{text:"₹ "+total.toFixed(2)+" L",showarrow:false}]});
+
+typeDonut.on("plotly_click",e=>{
+const l=e.points[0].label;
+drillData=filteredData.filter(d=>d.Type===l);
+drillSection.style.display="block";
+renderDrill();
+});
 }
 
-/* =====================================================
-   TOP 5
-===================================================== */
+function renderDrill(){
+const q=drillSearch.value.toLowerCase();
+const data=drillData.filter(d=>JSON.stringify(d).toLowerCase().includes(q));
+drillBody.innerHTML=data.map(d=>`
+<tr>
+<td>${d.Investor}</td>
+<td>${d["Name of the Company"]}</td>
+<td>${d.Type}</td>
+<td>${d.Qty}</td>
+<td>${d["Rate per share"]}</td>
+<td>${(+d.Value/100000).toFixed(2)}</td>
+<td>${d.DOA}</td>
+</tr>`).join('');
+}
+
 function renderTop5(){
-  const base = drillData.length ? drillData : filteredData;
-  const map={}, qtyMap={};
-  base.forEach(d=>{
-    const k = drillData.length ? d.Investor : d["Name of the Company"];
-    map[k]=(map[k]||0)+(+d.Value||0)/100000;
-    qtyMap[k]=(qtyMap[k]||0)+(+d.Qty||0);
-  });
-  top5Row.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5)
-    .map(([k,v])=>`<div><b>${k}</b><br>Qty: ${qtyMap[k]}<br>₹ ${v.toFixed(2)} L</div>`).join('');
+const base=drillData.length?drillData:filteredData;
+const map={},qtyMap={};
+const total=base.reduce((a,b)=>a+(+b.Value||0),0)/100000;
+
+base.forEach(d=>{
+const k=d["Name of the Company"];
+map[k]=(map[k]||0)+(+d.Value||0)/100000;
+qtyMap[k]=(qtyMap[k]||0)+(+d.Qty||0);
+});
+
+top5Row.innerHTML=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5)
+.map(([k,v])=>{
+const pct=total>0?((v/total)*100).toFixed(1):0;
+return `<div><b>${k}</b><br>Qty:${qtyMap[k]}<br>₹${v.toFixed(2)}L<br>${pct}%</div>`;
+}).join('');
 }
 
-/* =====================================================
-   REPOSITORY
-===================================================== */
-function renderRepository(){
-  const q = repoSearch.value.toLowerCase();
-  const data = filteredData.filter(d=>JSON.stringify(d).toLowerCase().includes(q));
+function renderRepo(){
+const q=repoSearch.value.toLowerCase();
+const data=filteredData.filter(d=>JSON.stringify(d).toLowerCase().includes(q));
 
-  repoBody.innerHTML = data.map(d=>`
-    <tr>
-      <td>${d.Investor}</td>
-      <td>${d["Name of the Company"]}</td>
-      <td>${d.Type}</td>
-      <td>${d.Qty}</td>
-      <td>${d["Rate per share"]}</td>
-      <td>${(+d.Value/100000).toFixed(2)}</td>
-      <td>${d.DOA}</td>
-    </tr>`).join('');
+repoBody.innerHTML=data.map(d=>`
+<tr>
+<td>${d.Investor}</td>
+<td>${d["Name of the Company"]}</td>
+<td>${d.Type}</td>
+<td>${d.Qty}</td>
+<td>${d["Rate per share"]}</td>
+<td>${(+d.Value/100000).toFixed(2)}</td>
+<td>${d.DOA}</td>
+</tr>`).join('');
 
-  const qty=data.reduce((a,b)=>a+(+b.Qty||0),0);
-  const val=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
-  totalQty.innerText=qty.toLocaleString();
-  totalValue.innerText="₹ "+val.toFixed(2)+" L";
+const qty=data.reduce((a,b)=>a+(+b.Qty||0),0);
+const val=data.reduce((a,b)=>a+(+b.Value||0),0)/100000;
+totalQty.innerText=qty;
+totalValue.innerText="₹ "+val.toFixed(2)+" L";
 }
 
-/* =====================================================
-   EXPORTS
-===================================================== */
 async function exportPDF(){
-  const pieImg=await Plotly.toImage(companyPie,{format:"png",width:700,height:500});
-  const donutImg=await Plotly.toImage(typeDonut,{format:"png",width:700,height:500});
+const pie=await Plotly.toImage(companyPie,{format:"png"});
+const donut=await Plotly.toImage(typeDonut,{format:"png"});
 
-  const box=document.createElement("div");
-  box.innerHTML=`
-    <h2>AG Group – Investment Report</h2>
-    <p>Period: ${periodText.innerText}<br>Generated: ${new Date().toLocaleString()}</p>
+const box=document.createElement("div");
+box.innerHTML=`
+<h2>AG Group Report</h2>
+<p>${periodText.innerText}</p>
+<h3>Company Concentration</h3>
+<img src="${pie}">
+<h3>Investment Mix</h3>
+<img src="${donut}">
+<div class="page-break"></div>
+${repoTable.outerHTML}
+`;
 
-    <h3>Company Concentration</h3>
-    <img src="${pieImg}" style="width:100%">
-
-    <h3>Investment Mix</h3>
-    <img src="${donutImg}" style="width:100%">
-
-    <div class="page-break"></div>
-    <h3>Repository</h3>
-    <p>Total Qty: ${totalQty.innerText}<br>Total Value: ${totalValue.innerText}</p>
-    ${repoTable.outerHTML}
-  `;
-
-  html2pdf().set({margin:12,filename:"AG_Investment_Report.pdf",jsPDF:{format:"a3"},pagebreak:{mode:["css"]}})
-    .from(box).save();
+html2pdf().from(box).save();
 }
 
 function exportExcel(){
-  const wb=XLSX.utils.book_new();
-  const rows=(drillData.length?drillData:filteredData).map(d=>({
-    Investor:d.Investor,
-    Company:d["Name of the Company"],
-    Type:d.Type,
-    Qty:d.Qty,
-    "Rate per Share":d["Rate per share"],
-    "Value (₹ L)": (+d.Value/100000).toFixed(2),
-    Date:d.DOA
-  }));
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Data");
-  XLSX.writeFile(wb,"AG_Investment_Data.xlsx");
+const wb=XLSX.utils.book_new();
+const rows=filteredData.map(d=>({
+Investor:d.Investor,
+Company:d["Name of the Company"],
+Type:d.Type,
+Qty:d.Qty,
+Rate:d["Rate per share"],
+Value:(+d.Value/100000).toFixed(2),
+Date:d.DOA
+}));
+XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Data");
+XLSX.writeFile(wb,"Data.xlsx");
 }
 </script>
 
